@@ -1,0 +1,9 @@
+-- V1: Criar tabela usuario
+CREATE TABLE usuario (
+    id BIGSERIAL PRIMARY KEY,
+    login VARCHAR(255) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    nome VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

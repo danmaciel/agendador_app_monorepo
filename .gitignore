@@ -1,0 +1,44 @@
+# --- IDEs e Sistema Operacional ---
+.vscode/
+.idea/
+*.swp
+*.ds_store
+.classpath
+.project
+.settings/
+*.iml
+
+# --- Java / Spring Boot (Backend) ---
+**/target/
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+**/*.class
+**/*.jar
+**/*.war
+**/build/
+
+# --- Flutter (Mobile/Web) ---
+**/build/
+**/.dart_tool/
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/pubspec.lock
+**/*.fbc
+**/*.g.dart
+**/generated/
+# Ignorar arquivos específicos de plataforma do Flutter
+**/android/app/src/main/res/generated/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+
+# --- Logs e Temporários ---
+**/logs/
+*.log
+**/tmp/
+
+# --- Variáveis de Ambiente (Segurança!) ---
+**/.env
+**/.env.local
+**/credentials.json

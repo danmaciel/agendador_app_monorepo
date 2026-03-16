@@ -1,0 +1,42 @@
+*** requisitos
+* analise o projeto para verificar o que foi adicionado no pom.xml, se necessario adicionar mais extensoes mas sempre me perguntar
+* nao utilize lombok, utilize records quando necessario.
+* faca tudo de forma simples e otimizada, crie feature por feature e me avise para que eu possa testar para prosseguirmos para a proxima.
+* para cada feature, crie os testes unitarios garantindo 100% de cobertura.
+* para o projeto seguir a metodologia DDD para o CORE do sistema, principamente a linguagem Ubiqua
+* considerar API REST com clean archicteture com separacao por feature
+* teremos 4 features: usuario, auth, servico, agendamento
+* para cada feature crie a estrutura de pastas seguindo o padrao clean architecture para que cada servico seja independente um do outro
+* mantenha SEMPRE o padrao de escrita e organizacao do projeto
+* nao adicione nada se nao foi aprovado antes
+* criar as migrations e as relacoes de tabela abaixo, uma migration para cada seguindo o padrao do Flyway:
+  - usuario: id, login, senha, nome
+  - servico: id, nome, descricao, valor
+  - agendamento: id, usuario_id, servico_id, data, horario, aprovado
+  ** relacionamento:
+    - agendamento possui somente 1 usuario e usuario pode possuir mais de uma agendamento
+    - agendamento possui 1 ou mais servicos e servicos possui 0 ou mais agendamentos.
+* criar sistema de login com validacao de token JWT com validade de 1 hora, utilizar properties para configurar o tempo
+* Utilizar Sistema de ROLE para validar o tipo de usuario, serao duas ROLE_ADMIN e ROLE_CLIENTE
+* todo usuario criado devera iniciar com a ROLE_CLIENTE, Depois podera ser promovido pelo usuario que tenha a ROLE_ADMIN
+* criar um ApplicationRunner sendo um Initializer para criar um usuario admin
+ 
+*** Funcionalidades   
+** USUARIO CLIENTE
+
+* cliente pode possuir um mais agendamentos
+* cliente pode agendar mais de um tipo de servico
+* cliente pode alterar o agendamento ate dois dias antes, menos que isso
+deve ser bloqueado a alteraco e informado a mensagem "Esta alteracao so poder ser feita via telefone! Data vencimento menor que 2 dias!"
+* cliente pode ver historico de agendamentos baseado em filtro por periodo e podera verificar detalhes do agendamento, dia horario servico, etc.
+* se na hora do agendamento o cliente possuir agendamento de outro servico, sugerir que os servicos sejam agendados para a mesma data do primeiro agendamento.
+
+** USUARIO ADMIN
+
+* admin listagem agendamentos
+* admin devera ter um grafico de filtro semanal(filtro) dos agendamentos confirmados e negados
+* admin pode verificar agendamentos
+* admin pode alterar agendamentos dos clientes(devido a contato via telefone)
+* admin deve verificar agendamentos com status pendente e confirmar ou rejeitar o agendamento
+* cada servico contido no agendamento devera ter seu status, confirmado ou negado para o agendamento.
+

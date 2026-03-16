@@ -1,0 +1,13 @@
+package com.danmaciel.agendador_backend;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class AgendadorBackendApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}

@@ -1,0 +1,11 @@
+package com.danmaciel.agendador_backend.shared.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+@ResponseStatus(HttpStatus.BAD_REQUEST)
+public class LoginEmUsoException extends RuntimeException {
+    public LoginEmUsoException() {
+        super("Login já está em uso");
+    }
+}

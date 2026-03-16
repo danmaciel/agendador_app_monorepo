@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_local
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=@Abc123
+      - POSTGRES_DB=agendador_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./dados_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d agendador_database" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+#  api:
+#    build: ./backend
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=prod
+
+volumes:
+  dados_postgres:

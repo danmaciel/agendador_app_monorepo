@@ -36,6 +36,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(response);
     }
 
+    @ExceptionHandler(AgendaConflitoException.class)
+    public ResponseEntity<Map<String, Object>> handleAgendaConflito(AgendaConflitoException ex) {
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, "Acesso negado - você não tem permissão para acessar este recurso");

@@ -3,17 +3,20 @@ package com.danmaciel.agendador_backend.feature.agendamento.application.usecase;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.HistoricoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
+import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 
 @Component
 public class BuscarHistoricoUseCase {
@@ -34,6 +37,21 @@ public class BuscarHistoricoUseCase {
         }
 
         return agendamentos.map(this::toResponse);
+    }
+
+    public Map<LocalDate, List<HistoricoResponse>> buscarAgrupadosPorDia(Long usuarioId, LocalDate dataInicio, LocalDate dataFim) {
+        List<Agendamento> agendamentos;
+
+        if (dataInicio != null && dataFim != null) {
+            agendamentos = agendamentoRepository.findByUsuarioIdAndDataBetween(usuarioId, dataInicio, dataFim);
+        } else {
+            agendamentos = agendamentoRepository.findByUsuarioId(usuarioId);
+        }
+
+        return agendamentos.stream()
+                .filter(a -> a.getStatus() == StatusAgendamento.APROVADO)
+                .map(this::toResponse)
+                .collect(Collectors.groupingBy(HistoricoResponse::data));
     }
 
     private HistoricoResponse toResponse(Agendamento agendamento) {

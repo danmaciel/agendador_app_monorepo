@@ -18,6 +18,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     Page<Agendamento> findByUsuarioId(Long usuarioId, Pageable pageable);
     List<Agendamento> findByUsuarioIdAndDataBetween(Long usuarioId, LocalDate dataInicio, LocalDate dataFim);
     Page<Agendamento> findByUsuarioIdAndDataBetween(Long usuarioId, LocalDate dataInicio, LocalDate dataFim, Pageable pageable);
+    List<Agendamento> findByUsuarioIdAndDataBetweenAndStatus(Long usuarioId, LocalDate dataInicio, LocalDate dataFim, com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento status);
     List<Agendamento> findByDataBetween(LocalDate dataInicio, LocalDate dataFim);
     Page<Agendamento> findByDataBetween(LocalDate dataInicio, LocalDate dataFim, Pageable pageable);
     Optional<Agendamento> findByDataAndHorarioAndUsuarioId(LocalDate data, LocalTime horario, Long usuarioId);

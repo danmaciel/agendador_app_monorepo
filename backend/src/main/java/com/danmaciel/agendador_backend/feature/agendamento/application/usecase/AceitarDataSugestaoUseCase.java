@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
@@ -50,7 +51,7 @@ public class AceitarDataSugestaoUseCase {
         LocalDate dataFimSemana = request.data().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
         List<Agendamento> agendamentosSemana = agendamentoRepository
-                .findByUsuarioIdAndDataBetween(usuario.getId(), dataInicioSemana, dataFimSemana);
+                .findByUsuarioIdAndDataBetweenAndStatus(usuario.getId(), dataInicioSemana, dataFimSemana, StatusAgendamento.PENDENTE);
 
         if (agendamentosSemana.isEmpty()) {
             throw new ResourceNotFoundException("Nenhum agendamento encontrado nesta semana");
@@ -84,6 +85,7 @@ public class AceitarDataSugestaoUseCase {
                 agendamento.getData(),
                 agendamento.getHorario(),
                 agendamento.getStatus(),
-                agendamento.getTempoTotal());
+                agendamento.getTempoTotal()
+        );
     }
 }

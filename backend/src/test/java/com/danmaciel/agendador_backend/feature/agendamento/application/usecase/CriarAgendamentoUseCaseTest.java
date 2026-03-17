@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
@@ -70,7 +71,7 @@ class CriarAgendamentoUseCaseTest {
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
         when(servicoRepository.findAllById(Set.of(servicoId))).thenReturn(List.of(servico));
         when(agendamentoRepository.findByData(data)).thenReturn(List.of());
-        when(agendamentoRepository.findByUsuarioIdAndDataBetween(eq(usuarioId), any(), any()))
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatus(eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
                 .thenReturn(List.of());
         when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(i -> {
             Agendamento a = i.getArgument(0);
@@ -167,13 +168,14 @@ class CriarAgendamentoUseCaseTest {
         Agendamento agendamentoExistente = new Agendamento(usuario, data, horario);
         agendamentoExistente.setId(1L);
         agendamentoExistente.setTempoTotal(30);
+        agendamentoExistente.setStatus(StatusAgendamento.PENDENTE);
 
         AgendamentoRequest request = new AgendamentoRequest(usuarioId, data, horario, Set.of(servicoId));
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
         when(servicoRepository.findAllById(Set.of(servicoId))).thenReturn(List.of(servico));
         when(agendamentoRepository.findByData(data)).thenReturn(List.of());
-        when(agendamentoRepository.findByUsuarioIdAndDataBetween(eq(usuarioId), any(), any()))
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatus(eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
                 .thenReturn(List.of(agendamentoExistente));
 
         // Act & Assert

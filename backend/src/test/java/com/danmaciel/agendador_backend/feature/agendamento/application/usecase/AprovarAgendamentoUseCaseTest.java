@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
+import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AprovarAgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
@@ -42,15 +43,18 @@ class AprovarAgendamentoUseCaseTest {
         usuario.setId(1L);
 
         Servico servico = new Servico("Corte", "Corte masculino", new BigDecimal("50.00"));
+        servico.setId(1L);
 
         Agendamento agendamento = new Agendamento(usuario, LocalDate.now().plusDays(5), LocalTime.of(10, 0));
         agendamento.setId(id);
         agendamento.setServicos(Set.of(servico));
 
+        AprovarAgendamentoRequest request = new AprovarAgendamentoRequest(Set.of(1L));
+
         when(agendamentoRepository.findById(id)).thenReturn(Optional.of(agendamento));
         when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamento);
 
-        AgendamentoResponse result = aprobarAgendamentoUseCase.execute(id);
+        AgendamentoResponse result = aprobarAgendamentoUseCase.execute(id, request);
 
         assertNotNull(result);
     }

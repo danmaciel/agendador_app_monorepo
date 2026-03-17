@@ -1,6 +1,7 @@
 package com.danmaciel.agendador_backend.feature.agendamento.infrastructure.controller;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
+import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AprovarAgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.HistoricoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.application.usecase.AceitarDataSugestaoUseCase;
 import com.danmaciel.agendador_backend.feature.agendamento.application.usecase.AprovarAgendamentoUseCase;
@@ -161,6 +163,18 @@ public class AgendamentoController {
         return ResponseEntity.ok(buscarHistoricoUseCase.execute(usuarioId, dataInicio, dataFim, pageable));
     }
 
+    @GetMapping("/historico/aprovados-por-dia")
+    @Operation(summary = "Listar histórico agrupado por dia", description = "Lista agendamentos APROVADOS do cliente agrupados por data")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Histórico retornado com sucesso")
+    })
+    public ResponseEntity<Map<LocalDate, List<HistoricoResponse>>> listarHistoricoAgrupadoPorDia(
+            @RequestParam Long usuarioId,
+            @RequestParam(required = false) LocalDate dataInicio,
+            @RequestParam(required = false) LocalDate dataFim) {
+        return ResponseEntity.ok(buscarHistoricoUseCase.buscarAgrupadosPorDia(usuarioId, dataInicio, dataFim));
+    }
+
     @GetMapping("/pendentes")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Listar agendamentos pendentes", description = "Lista todos os agendamentos com status PENDENTE (apenas admin)")
@@ -225,13 +239,15 @@ public class AgendamentoController {
 
     @PatchMapping("/{id}/aprovar")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Aprovar agendamento", description = "Aprova um agendamento (apenas admin)")
+    @Operation(summary = "Aprovar agendamento", description = "Aprova um agendamento com serviços específicos (apenas admin)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Agendamento aprovado com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Agendamento não encontrado")
+            @ApiResponse(responseCode = "404", description = "Agendamento não encontrado"),
+            @ApiResponse(responseCode = "422", description = "Conflito de horário")
     })
-    public ResponseEntity<AgendamentoResponse> aprovar(@PathVariable Long id) {
-        return ResponseEntity.ok(aprovarAgendamentoUseCase.execute(id));
+    public ResponseEntity<AgendamentoResponse> aprovar(@PathVariable Long id,
+            @Valid @RequestBody AprovarAgendamentoRequest request) {
+        return ResponseEntity.ok(aprovarAgendamentoUseCase.execute(id, request));
     }
 
     @PatchMapping("/{id}/rejeitar")
@@ -251,7 +267,7 @@ public class AgendamentoController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Relatório gerado com sucesso")
     })
-    public ResponseEntity<Map<String, Long>> graficoSemanal(
+    public ResponseEntity<Map<String, Object>> graficoSemanal(
             @RequestParam LocalDate dataInicio,
             @RequestParam LocalDate dataFim) {
         return ResponseEntity.ok(gerarGraficoSemanalUseCase.execute(dataInicio, dataFim));

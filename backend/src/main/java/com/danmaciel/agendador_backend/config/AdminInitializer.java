@@ -36,7 +36,6 @@ public class AdminInitializer {
                         adminNome
                 );
                 admin.addRole(Role.ROLE_ADMIN);
-                admin.addRole(Role.ROLE_CLIENTE);
                 usuarioRepository.save(admin);
                 log.info("Usuário administrador criado com sucesso: {}", adminLogin);
             } else {

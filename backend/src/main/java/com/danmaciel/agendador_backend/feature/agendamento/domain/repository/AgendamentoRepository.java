@@ -24,4 +24,5 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     boolean existsByDataAndHorarioAndUsuarioId(LocalDate data, LocalTime horario, Long usuarioId);
     boolean existsByDataAndHorario(LocalDate data, LocalTime horario);
     List<Agendamento> findByData(LocalDate data);
+    Page<Agendamento> findByStatus(com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento status, Pageable pageable);
 }

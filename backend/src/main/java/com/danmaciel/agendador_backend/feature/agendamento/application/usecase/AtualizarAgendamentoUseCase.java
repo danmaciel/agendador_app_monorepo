@@ -1,6 +1,8 @@
 package com.danmaciel.agendador_backend.feature.agendamento.application.usecase;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -14,6 +16,7 @@ import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.Age
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
+import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
 import com.danmaciel.agendador_backend.shared.exception.AlteracaoForaDoPrazoException;
 import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
 
@@ -47,6 +50,13 @@ public class AtualizarAgendamentoUseCase {
                 .mapToInt(Servico::getTempoExecucao)
                 .sum();
 
+        List<Agendamento> agendamentosDia = agendamentoRepository.findByData(request.data());
+        Long idAgendamentoAtual = agendamento.getId();
+        List<Agendamento> agendamentosFiltrados = agendamentosDia.stream()
+                .filter(ag -> ag.getId() == null || !ag.getId().equals(idAgendamentoAtual))
+                .collect(Collectors.toList());
+        validarConflitoHorario(agendamentosFiltrados, request.horario(), tempoTotal);
+
         agendamento.setData(request.data());
         agendamento.setHorario(request.horario());
         agendamento.setServicos(servicos);
@@ -54,6 +64,31 @@ public class AtualizarAgendamentoUseCase {
 
         agendamento = agendamentoRepository.save(agendamento);
         return toResponse(agendamento);
+    }
+
+    private void validarConflitoHorario(List<Agendamento> agendamentosDia, LocalTime horarioInicio, int duracao) {
+        LocalTime horarioFim = horarioInicio.plusMinutes(duracao);
+
+        boolean haConflito = agendamentosDia.stream()
+                .anyMatch(ag -> existeConflito(horarioInicio, horarioFim, ag));
+
+        if (haConflito) {
+            throw new AgendamentoConflitoException(null);
+        }
+    }
+
+    private boolean existeConflito(LocalTime novoInicio, LocalTime novoFim, Agendamento existente) {
+        LocalTime existenteInicio = existente.getHorario();
+        LocalTime existenteFim = existenteInicio.plusMinutes(existente.getTempoTotal());
+        
+        boolean sobrepoe = novoInicio.isBefore(existenteFim) && novoFim.isAfter(existenteInicio);
+        
+        boolean novoCabeEntre = (novoInicio.isAfter(existenteInicio) || novoInicio.equals(existenteInicio))
+                             && novoFim.isBefore(existenteFim);
+        
+        boolean novoEngloba = novoInicio.isBefore(existenteInicio) && novoFim.isAfter(existenteFim);
+        
+        return sobrepoe || novoCabeEntre || novoEngloba;
     }
 
     private AgendamentoResponse toResponse(Agendamento agendamento) {

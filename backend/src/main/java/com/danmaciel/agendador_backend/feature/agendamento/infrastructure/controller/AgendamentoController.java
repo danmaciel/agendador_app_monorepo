@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -160,6 +161,24 @@ public class AgendamentoController {
         return ResponseEntity.ok(buscarHistoricoUseCase.execute(usuarioId, dataInicio, dataFim, pageable));
     }
 
+    @GetMapping("/pendentes")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Operation(summary = "Listar agendamentos pendentes", description = "Lista todos os agendamentos com status PENDENTE (apenas admin)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de agendamentos pendentes retornada com sucesso")
+    })
+    public ResponseEntity<Page<AgendamentoResponse>> listarPendentes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "data") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        PageRequest pageable = PageRequest.of(page, size, sort);
+        return ResponseEntity.ok(listarAgendamentosUseCase.executePendentes(pageable));
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Listar todos os agendamentos", description = "Lista todos os agendamentos do sistema com paginação (apenas admin)")
@@ -204,7 +223,7 @@ public class AgendamentoController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/aprovar")
+    @PatchMapping("/{id}/aprovar")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Aprovar agendamento", description = "Aprova um agendamento (apenas admin)")
     @ApiResponses(value = {
@@ -215,7 +234,7 @@ public class AgendamentoController {
         return ResponseEntity.ok(aprovarAgendamentoUseCase.execute(id));
     }
 
-    @PutMapping("/{id}/rejeitar")
+    @PatchMapping("/{id}/rejeitar")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Rejeitar agendamento", description = "Rejeita um agendamento (apenas admin)")
     @ApiResponses(value = {

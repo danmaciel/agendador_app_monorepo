@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
 
@@ -42,6 +43,11 @@ public class ListarAgendamentosUseCase {
             agendamentos = agendamentoRepository.findAll(pageable);
         }
         
+        return agendamentos.map(this::toResponse);
+    }
+
+    public Page<AgendamentoResponse> executePendentes(Pageable pageable) {
+        Page<Agendamento> agendamentos = agendamentoRepository.findByStatus(StatusAgendamento.PENDENTE, pageable);
         return agendamentos.map(this::toResponse);
     }
 

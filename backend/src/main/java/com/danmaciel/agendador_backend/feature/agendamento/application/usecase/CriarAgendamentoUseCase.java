@@ -64,20 +64,7 @@ public class CriarAgendamentoUseCase {
                 .sum();
 
         List<Agendamento> agendamentosDia = agendamentoRepository.findByData(request.data());
-        LocalTime horarioInicio = request.horario();
-        LocalTime horarioFim = horarioInicio.plusMinutes(tempoTotal);
-
-        for (Agendamento ag : agendamentosDia) {
-            LocalTime agInicio = ag.getHorario();
-            LocalTime agFim = agInicio.plusMinutes(ag.getTempoTotal());
-
-            boolean sobrepoe = horarioInicio.isBefore(agFim) && horarioFim.isAfter(agInicio);
-            if (sobrepoe) {
-                log.warn("Conflito de horário detectado para data {} horário {} com agendamento existente {}", 
-                        request.data(), request.horario(), ag.getId());
-                throw new AgendamentoConflitoException(null);
-            }
-        }
+        validarConflitoHorario(agendamentosDia, request.horario(), tempoTotal);
 
         LocalDate dataInicioSemana = request.data().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate dataFimSemana = request.data().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
@@ -102,6 +89,33 @@ public class CriarAgendamentoUseCase {
                 agendamento.getId(), usuario.getLogin());
         
         return toResponse(agendamento);
+    }
+
+    private void validarConflitoHorario(List<Agendamento> agendamentosDia, LocalTime horarioInicio, int duracao) {
+        LocalTime horarioFim = horarioInicio.plusMinutes(duracao);
+
+        boolean haConflito = agendamentosDia.stream()
+                .anyMatch(ag -> existeConflito(horarioInicio, horarioFim, ag));
+
+        if (haConflito) {
+            log.warn("Conflito de horário detectado para data {} horário {}", 
+                    agendamentosDia.isEmpty() ? null : agendamentosDia.get(0).getData(), horarioInicio);
+            throw new AgendamentoConflitoException(null);
+        }
+    }
+
+    private boolean existeConflito(LocalTime novoInicio, LocalTime novoFim, Agendamento existente) {
+        LocalTime existenteInicio = existente.getHorario();
+        LocalTime existenteFim = existenteInicio.plusMinutes(existente.getTempoTotal());
+        
+        boolean sobrepoe = novoInicio.isBefore(existenteFim) && novoFim.isAfter(existenteInicio);
+        
+        boolean novoCabeEntre = (novoInicio.isAfter(existenteInicio) || novoInicio.equals(existenteInicio))
+                             && novoFim.isBefore(existenteFim);
+        
+        boolean novoEngloba = novoInicio.isBefore(existenteInicio) && novoFim.isAfter(existenteFim);
+        
+        return sobrepoe || novoCabeEntre || novoEngloba;
     }
 
     private AgendamentoResponse toResponse(Agendamento agendamento) {

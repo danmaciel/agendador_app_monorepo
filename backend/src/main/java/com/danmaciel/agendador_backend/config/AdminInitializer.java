@@ -29,7 +29,7 @@ public class AdminInitializer {
     @Bean
     public ApplicationRunner initAdmin(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            if (usuarioRepository.findByLogin(adminLogin).isEmpty()) {
+            if (usuarioRepository.findByLoginAndAtivoTrue(adminLogin).isEmpty()) {
                 Usuario admin = new Usuario(
                         adminLogin,
                         passwordEncoder.encode(adminSenha),

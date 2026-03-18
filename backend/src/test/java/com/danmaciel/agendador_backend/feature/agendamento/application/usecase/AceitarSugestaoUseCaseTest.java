@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -23,12 +24,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
 class AceitarDataSugestaoUseCaseTest {
@@ -70,12 +72,13 @@ class AceitarDataSugestaoUseCaseTest {
         Agendamento agendamentoExistente = new Agendamento(usuario, data, LocalTime.of(10, 0));
         agendamentoExistente.setId(1L);
         agendamentoExistente.setServicos(new HashSet<>(Set.of(servico1)));
+        agendamentoExistente.setStatus(StatusAgendamento.PENDENTE);
 
         AgendamentoRequest request = new AgendamentoRequest(usuarioId, data, LocalTime.of(14, 0), Set.of(servicoId2));
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(servicoRepository.findAllById(Set.of(servicoId2))).thenReturn(List.of(servico2));
-        when(agendamentoRepository.findByUsuarioIdAndDataBetween(any(), any(), any()))
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId2)))).thenReturn(Set.of(servico2));
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
                 .thenReturn(List.of(agendamentoExistente));
         when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamentoExistente);
 
@@ -103,12 +106,12 @@ class AceitarDataSugestaoUseCaseTest {
         AgendamentoRequest request = new AgendamentoRequest(usuarioId, data, LocalTime.of(14, 0), Set.of(servicoId));
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(servicoRepository.findAllById(Set.of(servicoId))).thenReturn(List.of(servico));
-        when(agendamentoRepository.findByUsuarioIdAndDataBetween(any(), any(), any()))
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId)))).thenReturn(Set.of(servico));
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
                 .thenReturn(List.of());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> aceitarSugestaoUseCase.execute(request));
+        assertThrows(RecursoNaoEncontradoException.class, () -> aceitarSugestaoUseCase.execute(request));
     }
 
     @Test
@@ -121,6 +124,6 @@ class AceitarDataSugestaoUseCaseTest {
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> aceitarSugestaoUseCase.execute(request));
+        assertThrows(RecursoNaoEncontradoException.class, () -> aceitarSugestaoUseCase.execute(request));
     }
 }

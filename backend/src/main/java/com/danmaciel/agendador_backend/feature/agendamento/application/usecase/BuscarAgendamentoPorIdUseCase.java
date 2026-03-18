@@ -8,7 +8,7 @@ import com.danmaciel.agendador_backend.feature.agendamento.application.dto.Agend
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class BuscarAgendamentoPorIdUseCase {
@@ -20,8 +20,8 @@ public class BuscarAgendamentoPorIdUseCase {
     }
 
     public AgendamentoResponse execute(Long id) {
-        Agendamento agendamento = agendamentoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado"));
+        Agendamento agendamento = agendamentoRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
         return toResponse(agendamento);
     }
 

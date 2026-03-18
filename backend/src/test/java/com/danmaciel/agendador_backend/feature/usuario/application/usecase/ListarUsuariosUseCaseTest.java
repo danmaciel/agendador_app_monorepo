@@ -48,7 +48,7 @@ class ListarUsuariosUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Usuario> page = new PageImpl<>(List.of(usuario1, usuario2), pageable, 2);
 
-        when(usuarioRepository.findAll(pageable)).thenReturn(page);
+        when(usuarioRepository.findAllAtivos(pageable)).thenReturn(page);
 
         // Act
         Page<UsuarioResponse> result = listarUsuariosUseCase.execute(pageable);
@@ -64,7 +64,7 @@ class ListarUsuariosUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Usuario> page = new PageImpl<>(List.of(), pageable, 0);
 
-        when(usuarioRepository.findAll(pageable)).thenReturn(page);
+        when(usuarioRepository.findAllAtivos(pageable)).thenReturn(page);
 
         // Act
         Page<UsuarioResponse> result = listarUsuariosUseCase.execute(pageable);

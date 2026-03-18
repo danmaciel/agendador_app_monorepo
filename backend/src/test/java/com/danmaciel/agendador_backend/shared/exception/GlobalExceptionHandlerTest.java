@@ -14,7 +14,7 @@ class GlobalExceptionHandlerTest {
     void deveTratarResourceNotFound() {
         // Arrange
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
-        ResourceNotFoundException ex = new ResourceNotFoundException("Recurso não encontrado");
+        RecursoNaoEncontradoException ex = new RecursoNaoEncontradoException("Recurso não encontrado");
         
         // Act
         ResponseEntity<Map<String, Object>> response = handler.handleResourceNotFound(ex);

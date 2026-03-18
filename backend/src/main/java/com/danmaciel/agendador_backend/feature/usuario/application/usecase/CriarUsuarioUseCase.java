@@ -32,7 +32,7 @@ public class CriarUsuarioUseCase {
     public UsuarioResponse execute(UsuarioRequest request) {
         log.info("Tentativa de criar usuário com login: {}", request.login());
 
-        if (usuarioRepository.existsByLogin(request.login())) {
+        if (usuarioRepository.existsByLoginAndAtivoTrue(request.login())) {
             log.warn("Tentativa de criar usuário com login já existente: {}", request.login());
             throw new BusinessException("Login já está em uso");
         }

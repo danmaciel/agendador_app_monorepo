@@ -46,6 +46,9 @@ public class Usuario {
     @Column(name = "role")
     private Set<Role> roles = new HashSet<>();
 
+    @Column(nullable = false)
+    private Boolean ativo = true;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -109,6 +112,14 @@ public class Usuario {
 
     public void removeRole(Role role) {
         this.roles.remove(role);
+    }
+
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     public boolean hasRole(Role role) {

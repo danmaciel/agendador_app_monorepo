@@ -59,7 +59,7 @@ class BuscarHistoricoUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Agendamento> page = new PageImpl<>(List.of(agendamento), pageable, 1);
 
-        when(agendamentoRepository.findByUsuarioId(usuarioId, pageable)).thenReturn(page);
+        when(agendamentoRepository.findByUsuarioIdAndAtivoTrue(usuarioId, pageable)).thenReturn(page);
 
         Page<HistoricoResponse> result = buscarHistoricoUseCase.execute(usuarioId, null, null, pageable);
 
@@ -84,7 +84,7 @@ class BuscarHistoricoUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Agendamento> page = new PageImpl<>(List.of(agendamentoPassado), pageable, 1);
 
-        when(agendamentoRepository.findByUsuarioId(usuarioId, pageable)).thenReturn(page);
+        when(agendamentoRepository.findByUsuarioIdAndAtivoTrue(usuarioId, pageable)).thenReturn(page);
 
         Page<HistoricoResponse> result = buscarHistoricoUseCase.execute(usuarioId, null, null, pageable);
 
@@ -108,7 +108,7 @@ class BuscarHistoricoUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Agendamento> page = new PageImpl<>(List.of(agendamentoFuturo), pageable, 1);
 
-        when(agendamentoRepository.findByUsuarioId(usuarioId, pageable)).thenReturn(page);
+        when(agendamentoRepository.findByUsuarioIdAndAtivoTrue(usuarioId, pageable)).thenReturn(page);
 
         Page<HistoricoResponse> result = buscarHistoricoUseCase.execute(usuarioId, null, null, pageable);
 
@@ -134,7 +134,7 @@ class BuscarHistoricoUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Agendamento> page = new PageImpl<>(List.of(agendamento), pageable, 1);
 
-        when(agendamentoRepository.findByUsuarioIdAndDataBetween(usuarioId, dataInicio, dataFim, pageable)).thenReturn(page);
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndAtivoTrue(usuarioId, dataInicio, dataFim, pageable)).thenReturn(page);
 
         Page<HistoricoResponse> result = buscarHistoricoUseCase.execute(usuarioId, dataInicio, dataFim, pageable);
 
@@ -149,7 +149,7 @@ class BuscarHistoricoUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Agendamento> page = new PageImpl<>(List.of(), pageable, 0);
 
-        when(agendamentoRepository.findByUsuarioId(usuarioId, pageable)).thenReturn(page);
+        when(agendamentoRepository.findByUsuarioIdAndAtivoTrue(usuarioId, pageable)).thenReturn(page);
 
         Page<HistoricoResponse> result = buscarHistoricoUseCase.execute(usuarioId, null, null, pageable);
 
@@ -174,7 +174,7 @@ class BuscarHistoricoUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Agendamento> page = new PageImpl<>(List.of(agendamento), pageable, 1);
 
-        when(agendamentoRepository.findByUsuarioId(usuarioId, pageable)).thenReturn(page);
+        when(agendamentoRepository.findByUsuarioIdAndAtivoTrue(usuarioId, pageable)).thenReturn(page);
 
         Page<HistoricoResponse> result = buscarHistoricoUseCase.execute(usuarioId, null, null, pageable);
 

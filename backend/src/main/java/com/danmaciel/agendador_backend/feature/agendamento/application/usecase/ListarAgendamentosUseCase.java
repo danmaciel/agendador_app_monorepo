@@ -26,9 +26,9 @@ public class ListarAgendamentosUseCase {
         Page<Agendamento> agendamentos;
         
         if (dataInicio != null && dataFim != null) {
-            agendamentos = agendamentoRepository.findByUsuarioIdAndDataBetween(usuarioId, dataInicio, dataFim, pageable);
+            agendamentos = agendamentoRepository.findByUsuarioIdAndDataBetweenAndAtivoTrue(usuarioId, dataInicio, dataFim, pageable);
         } else {
-            agendamentos = agendamentoRepository.findByUsuarioId(usuarioId, pageable);
+            agendamentos = agendamentoRepository.findByUsuarioIdAndAtivoTrue(usuarioId, pageable);
         }
         
         return agendamentos.map(this::toResponse);
@@ -38,7 +38,7 @@ public class ListarAgendamentosUseCase {
         Page<Agendamento> agendamentos;
         
         if (dataInicio != null && dataFim != null) {
-            agendamentos = agendamentoRepository.findByDataBetween(dataInicio, dataFim, pageable);
+            agendamentos = agendamentoRepository.findByDataBetweenAndAtivoTrue(dataInicio, dataFim, pageable);
         } else {
             agendamentos = agendamentoRepository.findAll(pageable);
         }
@@ -47,7 +47,7 @@ public class ListarAgendamentosUseCase {
     }
 
     public Page<AgendamentoResponse> executePendentes(Pageable pageable) {
-        Page<Agendamento> agendamentos = agendamentoRepository.findByStatus(StatusAgendamento.PENDENTE, pageable);
+        Page<Agendamento> agendamentos = agendamentoRepository.findByStatusAndAtivoTrue(StatusAgendamento.PENDENTE, pageable);
         return agendamentos.map(this::toResponse);
     }
 

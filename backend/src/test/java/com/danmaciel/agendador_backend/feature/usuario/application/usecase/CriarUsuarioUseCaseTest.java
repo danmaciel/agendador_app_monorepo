@@ -42,7 +42,7 @@ class CriarUsuarioUseCaseTest {
         Usuario usuario = new Usuario("joao", "senhaEncoded", "João Silva");
         usuario.setId(1L);
 
-        when(usuarioRepository.existsByLogin("joao")).thenReturn(false);
+        when(usuarioRepository.existsByLoginAndAtivoTrue("joao")).thenReturn(false);
         when(passwordEncoder.encode("senha123")).thenReturn("senhaEncoded");
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
 
@@ -60,7 +60,7 @@ class CriarUsuarioUseCaseTest {
         // Arrange
         UsuarioRequest request = new UsuarioRequest("admin", "senha123", "Admin");
 
-        when(usuarioRepository.existsByLogin("admin")).thenReturn(true);
+        when(usuarioRepository.existsByLoginAndAtivoTrue("admin")).thenReturn(true);
 
         // Act & Assert
         assertThrows(BusinessException.class, () -> criarUsuarioUseCase.execute(request));

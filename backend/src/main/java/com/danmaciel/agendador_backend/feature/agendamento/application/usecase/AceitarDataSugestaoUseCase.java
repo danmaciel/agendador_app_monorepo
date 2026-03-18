@@ -21,7 +21,7 @@ import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class AceitarDataSugestaoUseCase {
@@ -40,21 +40,21 @@ public class AceitarDataSugestaoUseCase {
     @Transactional
     public AgendamentoResponse execute(AgendamentoRequest request) {
         Usuario usuario = usuarioRepository.findById(request.usuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
 
-        Set<Servico> servicosNovos = new HashSet<>(servicoRepository.findAllById(request.servicoIds()));
+        Set<Servico> servicosNovos = new HashSet<>(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(request.servicoIds())));
         if (servicosNovos.size() != request.servicoIds().size()) {
-            throw new ResourceNotFoundException("Um ou mais serviços não encontrados");
+            throw new RecursoNaoEncontradoException("Um ou mais serviços não encontrados");
         }
 
         LocalDate dataInicioSemana = request.data().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate dataFimSemana = request.data().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
         List<Agendamento> agendamentosSemana = agendamentoRepository
-                .findByUsuarioIdAndDataBetweenAndStatus(usuario.getId(), dataInicioSemana, dataFimSemana, StatusAgendamento.PENDENTE);
+                .findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(usuario.getId(), dataInicioSemana, dataFimSemana, StatusAgendamento.PENDENTE);
 
         if (agendamentosSemana.isEmpty()) {
-            throw new ResourceNotFoundException("Nenhum agendamento encontrado nesta semana");
+            throw new RecursoNaoEncontradoException("Nenhum agendamento encontrado nesta semana");
         }
 
         Agendamento agendamentoExistente = agendamentosSemana.get(0);
@@ -67,8 +67,6 @@ public class AceitarDataSugestaoUseCase {
                 .mapToInt(Servico::getTempoExecucao)
                 .sum();
         agendamentoExistente.setTempoTotal(tempoTotal);
-
-        //agendamentoExistente.setHorario(request.horario());
 
         agendamentoExistente = agendamentoRepository.save(agendamentoExistente);
         return toResponse(agendamentoExistente);

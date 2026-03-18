@@ -17,7 +17,7 @@ import com.danmaciel.agendador_backend.feature.usuario.application.dto.UsuarioRe
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Role;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
 class BuscarUsuarioPorIdUseCaseTest {
@@ -59,6 +59,6 @@ class BuscarUsuarioPorIdUseCaseTest {
         when(usuarioRepository.findById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> buscarUsuarioPorIdUseCase.execute(id));
+        assertThrows(RecursoNaoEncontradoException.class, () -> buscarUsuarioPorIdUseCase.execute(id));
     }
 }

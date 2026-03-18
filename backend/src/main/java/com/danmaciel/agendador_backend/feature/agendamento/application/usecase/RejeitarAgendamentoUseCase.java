@@ -8,7 +8,7 @@ import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendam
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 import java.util.stream.Collectors;
 
@@ -24,7 +24,7 @@ public class RejeitarAgendamentoUseCase {
     @Transactional
     public AgendamentoResponse execute(Long id) {
         Agendamento agendamento = agendamentoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
 
         agendamento.setStatus(StatusAgendamento.REJEITADO);
         agendamento = agendamentoRepository.save(agendamento);

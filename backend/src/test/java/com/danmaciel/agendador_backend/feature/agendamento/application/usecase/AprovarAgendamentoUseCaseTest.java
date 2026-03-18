@@ -44,14 +44,16 @@ class AprovarAgendamentoUseCaseTest {
 
         Servico servico = new Servico("Corte", "Corte masculino", new BigDecimal("50.00"));
         servico.setId(1L);
+        servico.setAtivo(true);
 
         Agendamento agendamento = new Agendamento(usuario, LocalDate.now().plusDays(5), LocalTime.of(10, 0));
         agendamento.setId(id);
         agendamento.setServicos(Set.of(servico));
+        agendamento.setAtivo(true);
 
         AprovarAgendamentoRequest request = new AprovarAgendamentoRequest(Set.of(1L));
 
-        when(agendamentoRepository.findById(id)).thenReturn(Optional.of(agendamento));
+        when(agendamentoRepository.findByIdAndAtivoTrue(id)).thenReturn(Optional.of(agendamento));
         when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamento);
 
         AgendamentoResponse result = aprobarAgendamentoUseCase.execute(id, request);

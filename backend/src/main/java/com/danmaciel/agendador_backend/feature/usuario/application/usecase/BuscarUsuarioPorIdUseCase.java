@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import com.danmaciel.agendador_backend.feature.usuario.application.dto.UsuarioResponse;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class BuscarUsuarioPorIdUseCase {
@@ -18,7 +18,7 @@ public class BuscarUsuarioPorIdUseCase {
 
     public UsuarioResponse execute(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
         return toResponse(usuario);
     }
 

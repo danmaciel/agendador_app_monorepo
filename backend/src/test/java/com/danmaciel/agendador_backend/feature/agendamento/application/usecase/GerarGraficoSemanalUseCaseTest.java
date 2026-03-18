@@ -52,14 +52,16 @@ class GerarGraficoSemanalUseCaseTest {
         agendamento1.setId(1L);
         agendamento1.setStatus(StatusAgendamento.APROVADO);
         agendamento1.setServicos(Set.of(servico));
+        agendamento1.setAtivo(true);
         
         LocalDate dataAgendamento2 = LocalDate.now().plusDays(6);
         Agendamento agendamento2 = new Agendamento(usuario, dataAgendamento2, LocalTime.of(14, 0));
         agendamento2.setId(2L);
         agendamento2.setStatus(StatusAgendamento.REJEITADO);
         agendamento2.setServicos(Set.of(servico));
+        agendamento2.setAtivo(true);
 
-        when(agendamentoRepository.findByDataBetween(dataInicio, dataFim)).thenReturn(List.of(agendamento1, agendamento2));
+        when(agendamentoRepository.findByDataBetweenAndAtivoTrue(dataInicio, dataFim)).thenReturn(List.of(agendamento1, agendamento2));
 
         Map<String, Object> result = gerarGraficoSemanalUseCase.execute(dataInicio, dataFim);
 
@@ -70,8 +72,8 @@ class GerarGraficoSemanalUseCaseTest {
         @SuppressWarnings("unchecked")
         Map<Integer, Long> agendamentosPorDia = (Map<Integer, Long>) result.get("agendamentosPorDia");
         assertNotNull(agendamentosPorDia);
-        assertEquals(1L, agendamentosPorDia.get(dataAgendamento1.getDayOfWeek().getValue()));
-        assertNull(agendamentosPorDia.get(dataAgendamento2.getDayOfWeek().getValue()));
+        assertEquals(1L, agendamentosPorDia.get(dataAgendamento1.getDayOfMonth()));
+        assertNull(agendamentosPorDia.get(dataAgendamento2.getDayOfMonth()));
     }
 
     @Test
@@ -79,7 +81,7 @@ class GerarGraficoSemanalUseCaseTest {
         LocalDate dataInicio = LocalDate.now();
         LocalDate dataFim = LocalDate.now().plusDays(7);
 
-        when(agendamentoRepository.findByDataBetween(dataInicio, dataFim)).thenReturn(List.of());
+        when(agendamentoRepository.findByDataBetweenAndAtivoTrue(dataInicio, dataFim)).thenReturn(List.of());
 
         Map<String, Object> result = gerarGraficoSemanalUseCase.execute(dataInicio, dataFim);
 

@@ -10,7 +10,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -35,6 +34,9 @@ public class Servico {
 
     @Column(nullable = false)
     private Integer tempoExecucao = 30;
+
+    @Column(nullable = false)
+    private Boolean ativo = true;
 
     @CreatedDate
     @Column(updatable = false)
@@ -98,6 +100,14 @@ public class Servico {
 
     public void setTempoExecucao(Integer tempoExecucao) {
         this.tempoExecucao = tempoExecucao;
+    }
+
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     public LocalDateTime getCreatedAt() {

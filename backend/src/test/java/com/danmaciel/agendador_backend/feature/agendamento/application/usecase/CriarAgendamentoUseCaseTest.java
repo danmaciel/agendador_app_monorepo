@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,7 +31,7 @@ import com.danmaciel.agendador_backend.feature.servico.domain.repository.Servico
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
 import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
 class CriarAgendamentoUseCaseTest {
@@ -69,9 +70,9 @@ class CriarAgendamentoUseCaseTest {
         AgendamentoRequest request = new AgendamentoRequest(usuarioId, data, horario, Set.of(servicoId));
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(servicoRepository.findAllById(Set.of(servicoId))).thenReturn(List.of(servico));
-        when(agendamentoRepository.findByData(data)).thenReturn(List.of());
-        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatus(eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId)))).thenReturn(Set.of(servico));
+        when(agendamentoRepository.findByDataAndAtivoTrue(data)).thenReturn(List.of());
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
                 .thenReturn(List.of());
         when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(i -> {
             Agendamento a = i.getArgument(0);
@@ -99,7 +100,7 @@ class CriarAgendamentoUseCaseTest {
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> criarAgendamentoUseCase.execute(request));
+        assertThrows(RecursoNaoEncontradoException.class, () -> criarAgendamentoUseCase.execute(request));
     }
 
     @Test
@@ -115,10 +116,10 @@ class CriarAgendamentoUseCaseTest {
                 Set.of(servicoId));
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(servicoRepository.findAllById(Set.of(servicoId))).thenReturn(List.of());
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId)))).thenReturn(Set.of());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> criarAgendamentoUseCase.execute(request));
+        assertThrows(RecursoNaoEncontradoException.class, () -> criarAgendamentoUseCase.execute(request));
     }
 
     @Test
@@ -135,15 +136,18 @@ class CriarAgendamentoUseCaseTest {
         Servico servico = new Servico("Corte", "Corte masculino", new BigDecimal("50.00"), 30);
         servico.setId(servicoId);
 
-        Agendamento agendamentoExistente = new Agendamento(usuario, data, horario);
+        Usuario usuario2 = new Usuario("maria", "senha", "Maria");
+        usuario2.setId(2L);
+        
+        Agendamento agendamentoExistente = new Agendamento(usuario2, data, horario);
         agendamentoExistente.setId(1L);
         agendamentoExistente.setTempoTotal(30);
 
         AgendamentoRequest request = new AgendamentoRequest(usuarioId, data, horario, Set.of(servicoId));
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(servicoRepository.findAllById(Set.of(servicoId))).thenReturn(List.of(servico));
-        when(agendamentoRepository.findByData(data)).thenReturn(List.of(agendamentoExistente));
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId)))).thenReturn(Set.of(servico));
+        when(agendamentoRepository.findByDataAndAtivoTrue(data)).thenReturn(List.of(agendamentoExistente));
 
         // Act & Assert
         AgendamentoConflitoException ex = assertThrows(AgendamentoConflitoException.class,
@@ -173,9 +177,9 @@ class CriarAgendamentoUseCaseTest {
         AgendamentoRequest request = new AgendamentoRequest(usuarioId, data, horario, Set.of(servicoId));
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(servicoRepository.findAllById(Set.of(servicoId))).thenReturn(List.of(servico));
-        when(agendamentoRepository.findByData(data)).thenReturn(List.of());
-        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatus(eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId)))).thenReturn(Set.of(servico));
+        when(agendamentoRepository.findByDataAndAtivoTrue(data)).thenReturn(List.of());
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
                 .thenReturn(List.of(agendamentoExistente));
 
         // Act & Assert

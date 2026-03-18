@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
 class BuscarServicoPorIdUseCaseTest {
@@ -38,8 +38,9 @@ class BuscarServicoPorIdUseCaseTest {
         Long id = 1L;
         Servico servico = new Servico("Corte de cabelo", "Corte masculino", new BigDecimal("50.00"));
         servico.setId(id);
+        servico.setAtivo(true);
 
-        when(servicoRepository.findById(id)).thenReturn(Optional.of(servico));
+        when(servicoRepository.findByIdAndAtivoTrue(id)).thenReturn(Optional.of(servico));
 
         // Act
         ServicoResponse result = buscarServicoPorIdUseCase.execute(id);
@@ -55,9 +56,9 @@ class BuscarServicoPorIdUseCaseTest {
         // Arrange
         Long id = 999L;
 
-        when(servicoRepository.findById(id)).thenReturn(Optional.empty());
+        when(servicoRepository.findByIdAndAtivoTrue(id)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> buscarServicoPorIdUseCase.execute(id));
+        assertThrows(RecursoNaoEncontradoException.class, () -> buscarServicoPorIdUseCase.execute(id));
     }
 }

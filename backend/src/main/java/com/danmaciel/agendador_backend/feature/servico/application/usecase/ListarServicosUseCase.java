@@ -18,7 +18,7 @@ public class ListarServicosUseCase {
     }
 
     public Page<ServicoResponse> execute(Pageable pageable) {
-        return servicoRepository.findAll(pageable)
+        return servicoRepository.findAllAtivos(pageable)
                 .map(this::toResponse);
     }
 

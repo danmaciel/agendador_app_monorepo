@@ -1,10 +1,13 @@
 package com.danmaciel.agendador_backend.feature.servico.application.usecase;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class DeletarServicoUseCase {
@@ -17,9 +20,12 @@ public class DeletarServicoUseCase {
 
     @Transactional
     public void execute(Long id) {
-        if (!servicoRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Serviço não encontrado");
+        Optional<Servico> servico = servicoRepository.findByIdAndAtivoTrue(id);
+        if (servico.isEmpty()) {
+            throw new RecursoNaoEncontradoException("Serviço não encontrado");
         }
-        servicoRepository.deleteById(id);
+        Servico servicoEntity = servico.get();
+        servicoEntity.setAtivo(false);
+        servicoRepository.save(servicoEntity);
     }
 }

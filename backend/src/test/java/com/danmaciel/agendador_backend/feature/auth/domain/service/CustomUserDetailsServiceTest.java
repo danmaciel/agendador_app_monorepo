@@ -39,7 +39,7 @@ class CustomUserDetailsServiceTest {
         usuario.setId(1L);
         usuario.addRole(Role.ROLE_ADMIN);
 
-        when(usuarioRepository.findByLogin(login)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByLoginAndAtivoTrue(login)).thenReturn(Optional.of(usuario));
 
         // Act
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(login);
@@ -54,7 +54,7 @@ class CustomUserDetailsServiceTest {
         // Arrange
         String login = "inexistente";
 
-        when(usuarioRepository.findByLogin(login)).thenReturn(Optional.empty());
+        when(usuarioRepository.findByLoginAndAtivoTrue(login)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(UsernameNotFoundException.class,

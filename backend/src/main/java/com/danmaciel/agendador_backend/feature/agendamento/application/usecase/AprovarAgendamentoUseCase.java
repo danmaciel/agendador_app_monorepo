@@ -14,7 +14,7 @@ import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.Age
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.shared.exception.AgendaConflitoException;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 import java.time.LocalTime;
 import java.util.List;
@@ -30,8 +30,14 @@ public class AprovarAgendamentoUseCase {
 
     @Transactional
     public AgendamentoResponse execute(Long id, AprovarAgendamentoRequest request) {
-        Agendamento agendamento = agendamentoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado"));
+        Agendamento agendamento = agendamentoRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
+
+        for (Servico servico : agendamento.getServicos()) {
+            if (!servico.getAtivo()) {
+                throw new RecursoNaoEncontradoException("Serviço '" + servico.getNome() + "' não está mais disponível");
+            }
+        }
 
         Set<Servico> servicosAprovados = agendamento.getServicos().stream()
                 .filter(s -> request.servicosAprovados().contains(s.getId()))
@@ -52,7 +58,7 @@ public class AprovarAgendamentoUseCase {
     }
 
     private void verificarConflitoHorario(Agendamento agendamento) {
-        List<Agendamento> agendamentosDia = agendamentoRepository.findByData(agendamento.getData());
+        List<Agendamento> agendamentosDia = agendamentoRepository.findByDataAndAtivoTrue(agendamento.getData());
         
         for (Agendamento existente : agendamentosDia) {
             if (existente.getId().equals(agendamento.getId())) continue;

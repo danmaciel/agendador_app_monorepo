@@ -56,7 +56,7 @@ class ListarAgendamentosUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Agendamento> page = new PageImpl<>(List.of(agendamento), pageable, 1);
 
-        when(agendamentoRepository.findByUsuarioId(usuarioId, pageable)).thenReturn(page);
+        when(agendamentoRepository.findByUsuarioIdAndAtivoTrue(usuarioId, pageable)).thenReturn(page);
 
         // Act
         Page<AgendamentoResponse> result = listarAgendamentosUseCase.executePorUsuario(usuarioId, null, null, pageable);
@@ -110,7 +110,7 @@ class ListarAgendamentosUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Agendamento> page = new PageImpl<>(List.of(agendamento), pageable, 1);
 
-        when(agendamentoRepository.findByUsuarioIdAndDataBetween(usuarioId, dataInicio, dataFim, pageable)).thenReturn(page);
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndAtivoTrue(usuarioId, dataInicio, dataFim, pageable)).thenReturn(page);
 
         // Act
         Page<AgendamentoResponse> result = listarAgendamentosUseCase.executePorUsuario(usuarioId, dataInicio, dataFim, pageable);
@@ -136,7 +136,7 @@ class ListarAgendamentosUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Agendamento> page = new PageImpl<>(List.of(agendamento), pageable, 1);
 
-        when(agendamentoRepository.findByStatus(StatusAgendamento.PENDENTE, pageable)).thenReturn(page);
+        when(agendamentoRepository.findByStatusAndAtivoTrue(StatusAgendamento.PENDENTE, pageable)).thenReturn(page);
 
         // Act
         Page<AgendamentoResponse> result = listarAgendamentosUseCase.executePendentes(pageable);

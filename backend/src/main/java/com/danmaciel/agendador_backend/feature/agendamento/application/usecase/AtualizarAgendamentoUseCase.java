@@ -18,7 +18,7 @@ import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
 import com.danmaciel.agendador_backend.shared.exception.AlteracaoForaDoPrazoException;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class AtualizarAgendamentoUseCase {
@@ -34,23 +34,23 @@ public class AtualizarAgendamentoUseCase {
 
     @Transactional
     public AgendamentoResponse execute(Long id, AgendamentoRequest request) {
-        Agendamento agendamento = agendamentoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado"));
+        Agendamento agendamento = agendamentoRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
 
         if (agendamento.getData().minusDays(2).isBefore(LocalDate.now())) {
             throw new AlteracaoForaDoPrazoException();
         }
 
-        Set<Servico> servicos = new java.util.HashSet<>(servicoRepository.findAllById(request.servicoIds()));
+        Set<Servico> servicos = new java.util.HashSet<>(servicoRepository.findAllByIdAndAtivoTrue(new java.util.HashSet<>(request.servicoIds())));
         if (servicos.size() != request.servicoIds().size()) {
-            throw new ResourceNotFoundException("Um ou mais serviços não encontrados");
+            throw new RecursoNaoEncontradoException("Um ou mais serviços não encontrados");
         }
 
         int tempoTotal = servicos.stream()
                 .mapToInt(Servico::getTempoExecucao)
                 .sum();
 
-        List<Agendamento> agendamentosDia = agendamentoRepository.findByData(request.data());
+        List<Agendamento> agendamentosDia = agendamentoRepository.findByDataAndAtivoTrue(request.data());
         Long idAgendamentoAtual = agendamento.getId();
         List<Agendamento> agendamentosFiltrados = agendamentosDia.stream()
                 .filter(ag -> ag.getId() == null || !ag.getId().equals(idAgendamentoAtual))

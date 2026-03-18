@@ -57,6 +57,9 @@ public class Agendamento {
     @Column(nullable = false)
     private Integer tempoTotal = 30;
 
+    @Column(nullable = false)
+    private Boolean ativo = true;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -129,6 +132,14 @@ public class Agendamento {
 
     public void setTempoTotal(Integer tempoTotal) {
         this.tempoTotal = tempoTotal;
+    }
+
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     public LocalDateTime getCreatedAt() {

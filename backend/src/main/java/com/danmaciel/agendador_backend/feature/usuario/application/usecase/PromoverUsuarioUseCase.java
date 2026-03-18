@@ -9,7 +9,7 @@ import com.danmaciel.agendador_backend.feature.usuario.application.dto.UsuarioRe
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Role;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class PromoverUsuarioUseCase {
@@ -23,7 +23,7 @@ public class PromoverUsuarioUseCase {
     @Transactional
     public UsuarioResponse execute(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
 
         usuario.addRole(Role.ROLE_ADMIN);
         usuario.setUpdatedAt(LocalDateTime.now());

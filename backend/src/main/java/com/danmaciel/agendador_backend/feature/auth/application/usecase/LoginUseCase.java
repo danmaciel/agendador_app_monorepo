@@ -44,7 +44,7 @@ public class LoginUseCase {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.login(), request.senha()));
 
-        Usuario usuario = usuarioRepository.findByLogin(request.login())
+        Usuario usuario = usuarioRepository.findByLoginAndAtivoTrue(request.login())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         refreshTokenRepository.deleteByUsuarioId(usuario.getId());

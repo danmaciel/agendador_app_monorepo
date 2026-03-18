@@ -63,7 +63,7 @@ class LoginUseCaseTest {
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
-        when(usuarioRepository.findByLogin("admin")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByLoginAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
         when(jwtService.generateToken(any(Usuario.class))).thenReturn("token-jwt");
         when(jwtService.getExpiration()).thenReturn(3600000L);
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(refreshToken);

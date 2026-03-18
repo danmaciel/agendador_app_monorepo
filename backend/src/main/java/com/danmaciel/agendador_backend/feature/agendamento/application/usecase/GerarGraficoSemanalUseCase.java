@@ -26,7 +26,7 @@ public class GerarGraficoSemanalUseCase {
     }
 
     public Map<String, Object> execute(LocalDate dataInicio, LocalDate dataFim) {
-        List<Agendamento> agendamentos = agendamentoRepository.findByDataBetween(dataInicio, dataFim);
+        List<Agendamento> agendamentos = agendamentoRepository.findByDataBetweenAndAtivoTrue(dataInicio, dataFim);
         
         List<Agendamento> aprovados = agendamentos.stream()
                 .filter(a -> a.getStatus() == StatusAgendamento.APROVADO)
@@ -53,7 +53,6 @@ public class GerarGraficoSemanalUseCase {
         Map<LocalDate, List<AgendamentoResponse>> listaAprovadosPorDia = aprovados.stream()
                 .map(this::toResponse)
                 .collect(Collectors.groupingBy(AgendamentoResponse::data));
-       // relatorio.put("listaAprovados", listaAprovadosPorDia);
 
         List<AgendamentoResponse> agendamentosHoje = aprovados.stream()
                 .filter(a -> a.getData().equals(hoje))

@@ -16,7 +16,7 @@ import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class CriarAgendamentoForcadoUseCase {
@@ -35,11 +35,11 @@ public class CriarAgendamentoForcadoUseCase {
     @Transactional
     public AgendamentoResponse execute(AgendamentoRequest request) {
         Usuario usuario = usuarioRepository.findById(request.usuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
 
-        Set<Servico> servicos = new HashSet<>(servicoRepository.findAllById(request.servicoIds()));
+        Set<Servico> servicos = new HashSet<>(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(request.servicoIds())));
         if (servicos.size() != request.servicoIds().size()) {
-            throw new ResourceNotFoundException("Um ou mais serviços não encontrados");
+            throw new RecursoNaoEncontradoException("Um ou mais serviços não encontrados");
         }
 
         int tempoTotal = servicos.stream()

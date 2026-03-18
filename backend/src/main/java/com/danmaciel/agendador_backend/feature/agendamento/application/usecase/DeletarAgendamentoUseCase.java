@@ -1,10 +1,13 @@
 package com.danmaciel.agendador_backend.feature.agendamento.application.usecase;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class DeletarAgendamentoUseCase {
@@ -17,9 +20,12 @@ public class DeletarAgendamentoUseCase {
 
     @Transactional
     public void execute(Long id) {
-        if (!agendamentoRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Agendamento não encontrado");
+        Optional<Agendamento> agendamento = agendamentoRepository.findByIdAndAtivoTrue(id);
+        if (agendamento.isEmpty()) {
+            throw new RecursoNaoEncontradoException("Agendamento não encontrado");
         }
-        agendamentoRepository.deleteById(id);
+        Agendamento agendamentoEntity = agendamento.get();
+        agendamentoEntity.setAtivo(false);
+        agendamentoRepository.save(agendamentoEntity);
     }
 }

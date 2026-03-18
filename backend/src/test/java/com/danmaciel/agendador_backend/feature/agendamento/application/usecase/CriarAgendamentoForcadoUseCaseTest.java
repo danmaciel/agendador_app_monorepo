@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,7 +28,7 @@ import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
 class CriarAgendamentoForcadoUseCaseTest {
@@ -66,7 +67,7 @@ class CriarAgendamentoForcadoUseCaseTest {
         AgendamentoRequest request = new AgendamentoRequest(usuarioId, data, horario, Set.of(servicoId));
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(servicoRepository.findAllById(Set.of(servicoId))).thenReturn(List.of(servico));
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId)))).thenReturn(Set.of(servico));
         when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(i -> {
             Agendamento a = i.getArgument(0);
             a.setId(1L);
@@ -92,7 +93,7 @@ class CriarAgendamentoForcadoUseCaseTest {
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> criarAgendamentoForcadoUseCase.execute(request));
+        assertThrows(RecursoNaoEncontradoException.class, () -> criarAgendamentoForcadoUseCase.execute(request));
     }
 
     @Test
@@ -108,9 +109,9 @@ class CriarAgendamentoForcadoUseCaseTest {
                 LocalTime.of(10, 0), Set.of(servicoId));
 
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(servicoRepository.findAllById(Set.of(servicoId))).thenReturn(List.of());
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId)))).thenReturn(Set.of());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> criarAgendamentoForcadoUseCase.execute(request));
+        assertThrows(RecursoNaoEncontradoException.class, () -> criarAgendamentoForcadoUseCase.execute(request));
     }
 }

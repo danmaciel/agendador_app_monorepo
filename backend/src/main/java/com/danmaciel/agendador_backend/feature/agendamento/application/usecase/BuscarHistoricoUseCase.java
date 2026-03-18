@@ -31,9 +31,9 @@ public class BuscarHistoricoUseCase {
         Page<Agendamento> agendamentos;
 
         if (dataInicio != null && dataFim != null) {
-            agendamentos = agendamentoRepository.findByUsuarioIdAndDataBetween(usuarioId, dataInicio, dataFim, pageable);
+            agendamentos = agendamentoRepository.findByUsuarioIdAndDataBetweenAndAtivoTrue(usuarioId, dataInicio, dataFim, pageable);
         } else {
-            agendamentos = agendamentoRepository.findByUsuarioId(usuarioId, pageable);
+            agendamentos = agendamentoRepository.findByUsuarioIdAndAtivoTrue(usuarioId, pageable);
         }
 
         return agendamentos.map(this::toResponse);
@@ -43,9 +43,9 @@ public class BuscarHistoricoUseCase {
         List<Agendamento> agendamentos;
 
         if (dataInicio != null && dataFim != null) {
-            agendamentos = agendamentoRepository.findByUsuarioIdAndDataBetween(usuarioId, dataInicio, dataFim);
+            agendamentos = agendamentoRepository.findByUsuarioIdAndDataBetweenAndAtivoTrue(usuarioId, dataInicio, dataFim);
         } else {
-            agendamentos = agendamentoRepository.findByUsuarioId(usuarioId);
+            agendamentos = agendamentoRepository.findByUsuarioIdAndAtivoTrue(usuarioId);
         }
 
         return agendamentos.stream()

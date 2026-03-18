@@ -46,7 +46,7 @@ class ListarServicosUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Servico> page = new PageImpl<>(List.of(servico1, servico2), pageable, 2);
 
-        when(servicoRepository.findAll(pageable)).thenReturn(page);
+        when(servicoRepository.findAllAtivos(pageable)).thenReturn(page);
 
         // Act
         Page<ServicoResponse> result = listarServicosUseCase.execute(pageable);
@@ -62,7 +62,7 @@ class ListarServicosUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Servico> page = new PageImpl<>(List.of(), pageable, 0);
 
-        when(servicoRepository.findAll(pageable)).thenReturn(page);
+        when(servicoRepository.findAllAtivos(pageable)).thenReturn(page);
 
         // Act
         Page<ServicoResponse> result = listarServicosUseCase.execute(pageable);

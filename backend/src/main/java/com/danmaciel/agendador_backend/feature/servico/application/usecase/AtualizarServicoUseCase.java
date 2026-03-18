@@ -10,7 +10,7 @@ import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoRe
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.shared.exception.BusinessException;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class AtualizarServicoUseCase {
@@ -23,10 +23,10 @@ public class AtualizarServicoUseCase {
 
     @Transactional
     public ServicoResponse execute(Long id, ServicoRequest request) {
-        Servico servico = servicoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Serviço não encontrado"));
+        Servico servico = servicoRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Serviço não encontrado"));
 
-        if (servicoRepository.existsByNome(request.nome()) &&
+        if (servicoRepository.existsByNomeAndAtivoTrue(request.nome()) &&
                 !servico.getNome().equals(request.nome())) {
             throw new BusinessException("Nome do serviço já está em uso");
         }

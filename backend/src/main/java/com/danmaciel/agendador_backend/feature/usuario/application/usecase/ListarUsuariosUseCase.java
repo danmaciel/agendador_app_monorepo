@@ -18,7 +18,7 @@ public class ListarUsuariosUseCase {
     }
 
     public Page<UsuarioResponse> execute(Pageable pageable) {
-        return usuarioRepository.findAll(pageable)
+        return usuarioRepository.findAllAtivos(pageable)
                 .map(this::toResponse);
     }
 

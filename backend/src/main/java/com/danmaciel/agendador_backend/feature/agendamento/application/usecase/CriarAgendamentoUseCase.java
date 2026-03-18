@@ -25,7 +25,7 @@ import com.danmaciel.agendador_backend.feature.servico.domain.repository.Servico
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
 import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class CriarAgendamentoUseCase {
@@ -51,27 +51,27 @@ public class CriarAgendamentoUseCase {
         Usuario usuario = usuarioRepository.findById(request.usuarioId())
                 .orElseThrow(() -> {
                     log.error("Usuário não encontrado: {}", request.usuarioId());
-                    return new ResourceNotFoundException("Usuário não encontrado");
+                    return new RecursoNaoEncontradoException("Usuário não encontrado");
                 });
 
-        Set<Servico> servicos = new HashSet<>(servicoRepository.findAllById(request.servicoIds()));
+        Set<Servico> servicos = new HashSet<>(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(request.servicoIds())));
         if (servicos.size() != request.servicoIds().size()) {
             log.error("Serviços não encontrados para agendamento");
-            throw new ResourceNotFoundException("Um ou mais serviços não encontrados");
+            throw new RecursoNaoEncontradoException("Um ou mais serviços não encontrados");
         }
 
         int tempoTotal = servicos.stream()
                 .mapToInt(Servico::getTempoExecucao)
                 .sum();
 
-        List<Agendamento> agendamentosDia = agendamentoRepository.findByData(request.data());
+        List<Agendamento> agendamentosDia = agendamentoRepository.findByDataAndAtivoTrue(request.data());
         validarConflitoHorario(agendamentosDia, request.horario(), tempoTotal);
 
         LocalDate dataInicioSemana = request.data().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate dataFimSemana = request.data().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
         List<Agendamento> agendamentosSemana = agendamentoRepository
-                .findByUsuarioIdAndDataBetweenAndStatus(usuario.getId(), dataInicioSemana, dataFimSemana, StatusAgendamento.PENDENTE);
+                .findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(usuario.getId(), dataInicioSemana, dataFimSemana, StatusAgendamento.PENDENTE);
 
         if (!agendamentosSemana.isEmpty()) {
             LocalDate dataSugerida = agendamentosSemana.get(0).getData();

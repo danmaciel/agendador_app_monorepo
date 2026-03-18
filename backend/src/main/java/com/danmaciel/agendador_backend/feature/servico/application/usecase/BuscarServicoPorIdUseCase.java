@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @Component
 public class BuscarServicoPorIdUseCase {
@@ -17,8 +17,8 @@ public class BuscarServicoPorIdUseCase {
     }
 
     public ServicoResponse execute(Long id) {
-        Servico servico = servicoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Serviço não encontrado"));
+        Servico servico = servicoRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Serviço não encontrado"));
         return toResponse(servico);
     }
 

@@ -26,7 +26,7 @@ import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.shared.exception.AlteracaoForaDoPrazoException;
-import com.danmaciel.agendador_backend.shared.exception.ResourceNotFoundException;
+import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
 class AtualizarAgendamentoUseCaseTest {
@@ -53,16 +53,18 @@ class AtualizarAgendamentoUseCaseTest {
 
         Servico servico = new Servico("Corte", "Corte masculino", new BigDecimal("50.00"));
         servico.setId(1L);
+        servico.setAtivo(true);
 
         Agendamento agendamento = new Agendamento(usuario, LocalDate.now().plusDays(5), LocalTime.of(10, 0));
         agendamento.setId(id);
         agendamento.setServicos(Set.of(servico));
+        agendamento.setAtivo(true);
 
         AgendamentoRequest request = new AgendamentoRequest(1L, LocalDate.now().plusDays(10), LocalTime.of(14, 0),
                 Set.of(1L));
 
-        when(agendamentoRepository.findById(id)).thenReturn(Optional.of(agendamento));
-        when(servicoRepository.findAllById(Set.of(1L))).thenReturn(List.of(servico));
+        when(agendamentoRepository.findByIdAndAtivoTrue(id)).thenReturn(Optional.of(agendamento));
+        when(servicoRepository.findAllByIdAndAtivoTrue(new java.util.HashSet<>(Set.of(1L)))).thenReturn(Set.of(servico));
         when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamento);
 
         // Act
@@ -79,10 +81,10 @@ class AtualizarAgendamentoUseCaseTest {
         AgendamentoRequest request = new AgendamentoRequest(1L, LocalDate.now().plusDays(10), LocalTime.of(14, 0),
                 Set.of(1L));
 
-        when(agendamentoRepository.findById(id)).thenReturn(Optional.empty());
+        when(agendamentoRepository.findByIdAndAtivoTrue(id)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> atualizarAgendamentoUseCase.execute(id, request));
+        assertThrows(RecursoNaoEncontradoException.class, () -> atualizarAgendamentoUseCase.execute(id, request));
     }
 
     @Test
@@ -97,11 +99,12 @@ class AtualizarAgendamentoUseCaseTest {
         Agendamento agendamento = new Agendamento(usuario, LocalDate.now().plusDays(1), LocalTime.of(10, 0));
         agendamento.setId(id);
         agendamento.setServicos(Set.of(servico));
+        agendamento.setAtivo(true);
 
         AgendamentoRequest request = new AgendamentoRequest(1L, LocalDate.now().plusDays(10), LocalTime.of(14, 0),
                 Set.of(1L));
 
-        when(agendamentoRepository.findById(id)).thenReturn(Optional.of(agendamento));
+        when(agendamentoRepository.findByIdAndAtivoTrue(id)).thenReturn(Optional.of(agendamento));
 
         // Act & Assert
         assertThrows(AlteracaoForaDoPrazoException.class, () -> atualizarAgendamentoUseCase.execute(id, request));

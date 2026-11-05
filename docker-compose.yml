@@ -5,10 +5,10 @@ services:
     restart: always
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=@Abc123
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD antes de iniciar}
       - POSTGRES_DB=agendador_database
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - ./dados_postgres:/var/lib/postgresql/data
     healthcheck:

@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -70,7 +69,7 @@ class RefreshTokenUseCaseTest {
         assertNotNull(result);
         assertEquals("new-jwt-token", result.token());
         assertEquals(3600000L, result.expiracao());
-        assertNotNull(result.refreshToken());
+        assertEquals(newRefreshToken.getIssuedSecret(), result.refreshToken());
     }
 
     @Test
@@ -146,7 +145,8 @@ class RefreshTokenUseCaseTest {
         refreshToken.setId(1L);
         refreshToken.setExpirationDate(LocalDateTime.now().minusDays(1));
 
-        when(refreshTokenRepository.findByToken(refreshTokenString)).thenReturn(Optional.of(refreshToken));
+        when(refreshTokenRepository.findByToken(RefreshTokenFingerprint.fingerprint(refreshTokenString)))
+                .thenReturn(Optional.of(refreshToken));
 
         // Act & Assert
         assertThrows(BusinessException.class, () -> refreshTokenUseCase.execute(refreshTokenString));

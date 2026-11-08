@@ -38,6 +38,18 @@ public final class RefreshTokenFingerprint {
         }
     }
 
+    /**
+     * Only the historical UUIDv4 wire format qualifies for plaintext migration.
+     * Never interpret a stored sha256: fingerprint as a bearer secret.
+     */
+    public static boolean isLegacyUuid(String rawSecret) {
+        if (rawSecret == null || !rawSecret.matches(
+                "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}")) {
+            return false;
+        }
+        return true;
+    }
+
     public static boolean isFingerprint(String storedValue) {
         return storedValue != null && storedValue.startsWith(PREFIX);
     }

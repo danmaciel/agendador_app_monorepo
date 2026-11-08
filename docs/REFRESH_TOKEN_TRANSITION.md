@@ -19,7 +19,7 @@ A compatibilidade não tem prazo automático para ser removida. Um planejamento 
 
 ## Riscos remanescentes
 
-1. O refresh consulta o registro com **`PESSIMISTIC_WRITE`** dentro da mesma transação de validação, exclusão e emissão do sucessor. Um teste com **duas transações H2 independentes** verifica um único vencedor; **isso não substitui validação em PostgreSQL**. Não há token-family replay detection e uma tentativa posterior com token já consumido é recusada, sem revogar automaticamente o sucessor. Login concorrente, falhas de rede e outras operações de sessão ainda requerem avaliação.
+1. O refresh consulta o registro com **`PESSIMISTIC_WRITE`** dentro da mesma transação de validação, exclusão e emissão do sucessor. Um teste com **duas transações H2 independentes** verifica um único vencedor; a validação adicional em PostgreSQL usa Testcontainers no perfil opt-in `postgres-it`. Não há token-family replay detection e uma tentativa posterior com token já consumido é recusada, sem revogar automaticamente o sucessor. Login concorrente, falhas de rede e outras operações de sessão ainda requerem avaliação.
 2. A verificação de `ativo` não está serializada com uma mudança concorrente do cadastro.
 3. O frontend/cliente que possui o token continua responsável por protegê-lo. O hash no banco não elimina XSS nem captura de resposta.
 4. Segredos anteriormente expostos em logs, backups ou commits devem ser considerados comprometidos e revogados; não são corrigidos por este PR.
@@ -31,6 +31,7 @@ A compatibilidade não tem prazo automático para ser removida. Um planejamento 
 - `LoginUseCaseTest`: resposta contém o segredo cru, mas entidade contém somente o fingerprint.
 - `RefreshTokenUseCaseTest`: consulta por fingerprint, aceitação do UUIDv4 legado, recusa de fingerprint como Bearer, expiração e conta desativada.
 - `RefreshTokenConcurrentIntegrationTest`: duas transações simultâneas em H2, com uma única renovação bem-sucedida (sujeito a confirmação do CI).
-- `.github/workflows/ci.yml`: Maven `verify` executado no GitHub Actions.
+- `RefreshTokenPostgresIT`: teste com duas transações independentes contra PostgreSQL 15 Testcontainers, verificando um único sucessor. O resultado deve ser consultado no job `postgres-integration` do GitHub Actions.
+- `.github/workflows/ci.yml`: Maven `verify` para testes comuns e `mvn -Ppostgres-it verify` para a integração PostgreSQL.
 
-Os testes com H2 exercitam bloqueio de linha e transações independentes, mas **não provam as semânticas de bloqueio de PostgreSQL**, proteção universal contra replay ou ausência completa de segredos em todos os logs. Use [SECURITY_SETUP.md](../SECURITY_SETUP.md) para as restrições do ambiente.
+O teste adicional com Testcontainers cobre uma disputa entre duas transações em PostgreSQL real; **não comprova proteção universal contra replay**, serialização contra login concorrente, execução em múltiplas instâncias ou ausência completa de segredos nos logs. Não representa teste de carga. Use [SECURITY_SETUP.md](../SECURITY_SETUP.md) para as restrições do ambiente.

@@ -1,7 +1,6 @@
 package com.danmaciel.agendador_backend.feature.auth.domain.entity;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +11,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import com.danmaciel.agendador_backend.feature.auth.domain.service.RefreshTokenFingerprint;
 
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 
@@ -26,6 +27,9 @@ public class RefreshToken {
     @Column(nullable = false, unique = true)
     private String token;
 
+    @Transient
+    private String issuedSecret;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
@@ -38,7 +42,8 @@ public class RefreshToken {
 
     public RefreshToken(Usuario usuario, long expirationMinutes) {
         this.usuario = usuario;
-        this.token = UUID.randomUUID().toString();
+        this.issuedSecret = RefreshTokenFingerprint.issueSecret();
+        this.token = RefreshTokenFingerprint.fingerprint(issuedSecret);
         this.expirationDate = LocalDateTime.now().plusMinutes(expirationMinutes);
     }
 
@@ -52,6 +57,11 @@ public class RefreshToken {
 
     public String getToken() {
         return token;
+    }
+
+    /** Available only on newly issued entities; never persisted. */
+    public String getIssuedSecret() {
+        return issuedSecret;
     }
 
     public void setToken(String token) {

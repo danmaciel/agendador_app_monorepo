@@ -2,6 +2,8 @@ package com.danmaciel.agendador_backend.feature.auth.application.dto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -30,4 +32,13 @@ class TokenResponseTest {
         assertEquals(3600000L, token.expiracao());
         assertEquals("refresh-token", token.refreshToken());
     }
+    @Test
+    void toStringNeverExposesAccessOrRefreshSecret() {
+        TokenResponse response = new TokenResponse("secret-access-jwt", 3600000L, "secret-refresh");
+        String diagnostic = response.toString();
+        assertFalse(diagnostic.contains("secret-access-jwt"));
+        assertFalse(diagnostic.contains("secret-refresh"));
+        assertTrue(diagnostic.contains("<redacted>"));
+    }
 }
+

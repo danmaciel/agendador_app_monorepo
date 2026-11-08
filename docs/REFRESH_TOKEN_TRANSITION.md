@@ -7,7 +7,7 @@
 - O login gera um segredo opaco de **256 bits aleatórios** por `SecureRandom`, codificado em Base64 URL-safe sem padding.
 - O segredo cru é entregue somente ao cliente em `TokenResponse.refreshToken`. A entidade persiste `sha256:<digest hexadecimal>` na coluna existente `refresh_token.token`, que já comporta o formato.
 - O serviço calcula o fingerprint do segredo recebido e consulta a coluna. Nenhum hash do banco é aceito como credencial Bearer.
-- A rotação continua invalidando o token anterior e criando outro. O hash protege o segredo em repouso contra leitura direta de banco, **mas não** implementa famílias de token, detecção robusta de replay, concorrência atômica de consumo ou revogação imediata de JWTs já emitidos.
+- A rotação continua invalidando o token anterior e criando outro. O hash protege o segredo em repouso contra leitura direta de banco, **mas não** implementa famílias de token, detecção robusta de replay ou revogação imediata de JWTs já emitidos. A concorrência coberta por bloqueios pessimistas e testes H2/PostgreSQL é detalhada abaixo.
 
 ## Compatibilidade temporária
 
@@ -30,8 +30,8 @@ A compatibilidade não tem prazo automático para ser removida. Um planejamento 
 - `RefreshTokenFingerprintTest`: entropia/formato, derivação de hash e não persistência do segredo na entidade.
 - `LoginUseCaseTest`: resposta contém o segredo cru, mas entidade contém somente o fingerprint.
 - `RefreshTokenUseCaseTest`: consulta por fingerprint, aceitação do UUIDv4 legado, recusa de fingerprint como Bearer, expiração e conta desativada.
-- `RefreshTokenConcurrentIntegrationTest`: duas transações simultâneas em H2, com uma única renovação bem-sucedida (sujeito a confirmação do CI).
+- `RefreshTokenConcurrentIntegrationTest`: duas transações simultâneas em H2, com uma única renovação bem-sucedida; verificar execução mais recente no CI.
 - `RefreshTokenPostgresIT`: testes com PostgreSQL 15 Testcontainers para um único sucessor em duas renovações e para login concorrente com refresh, verificando que a nova sessão de login permanece válida. O resultado deve ser consultado no job `postgres-integration` do GitHub Actions.
 - `.github/workflows/ci.yml`: Maven `verify` para testes comuns e `mvn -Ppostgres-it verify` para a integração PostgreSQL.
 
-O teste adicional com Testcontainers cobre uma disputa entre duas transações em PostgreSQL real; **não comprova proteção universal contra replay**, serialização contra login concorrente, execução em múltiplas instâncias ou ausência completa de segredos nos logs. Não representa teste de carga. Use [SECURITY_SETUP.md](../SECURITY_SETUP.md) para as restrições do ambiente.
+O teste adicional com Testcontainers cobre uma disputa entre duas transações em PostgreSQL real; **não comprova proteção universal contra replay**, todos os cenários de login concorrente, execução em múltiplas instâncias ou ausência completa de segredos nos logs. Não representa teste de carga. Use [SECURITY_SETUP.md](../SECURITY_SETUP.md) para as restrições do ambiente.

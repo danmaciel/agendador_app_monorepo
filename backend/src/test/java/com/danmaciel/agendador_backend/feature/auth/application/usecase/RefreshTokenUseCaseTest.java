@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -67,6 +69,22 @@ class RefreshTokenUseCaseTest {
         assertEquals("new-jwt-token", result.token());
         assertEquals(3600000L, result.expiracao());
         assertNotNull(result.refreshToken());
+    }
+
+    @Test
+    void naoDeveRenovarTokenDeUsuarioDesativado() {
+        Usuario usuario = new Usuario("conta-desativada", "hash-teste", "Conta teste");
+        usuario.setId(42L);
+        usuario.setAtivo(false);
+        RefreshToken refreshToken = new RefreshToken(usuario, 10080);
+        when(refreshTokenRepository.findByToken("refresh-de-conta-desativada"))
+                .thenReturn(Optional.of(refreshToken));
+
+        assertThrows(BusinessException.class,
+                () -> refreshTokenUseCase.execute("refresh-de-conta-desativada"));
+
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+        verify(jwtService, never()).generateToken(any(Usuario.class));
     }
 
     @Test

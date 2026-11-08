@@ -16,4 +16,10 @@ public record TokenResponse(
     public TokenResponse(String token, Long expiracao, String refreshToken) {
         this(token, "Bearer", expiracao, refreshToken);
     }
+
+    @Override
+    public String toString() {
+        return "TokenResponse[token=<redacted>, tipo=" + tipo
+                + ", expiracao=" + expiracao + ", refreshToken=<redacted>]";
+    }
 }

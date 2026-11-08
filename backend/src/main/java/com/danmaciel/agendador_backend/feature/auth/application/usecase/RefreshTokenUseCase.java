@@ -37,7 +37,9 @@ public class RefreshTokenUseCase {
         // their next successful refresh, when they are replaced by hashed rows.
         RefreshToken token = refreshTokenRepository
                 .findByToken(RefreshTokenFingerprint.fingerprint(refreshToken))
-                .or(() -> refreshTokenRepository.findByToken(refreshToken))
+                .or(() -> RefreshTokenFingerprint.isLegacyUuid(refreshToken)
+                        ? refreshTokenRepository.findByToken(refreshToken)
+                        : java.util.Optional.empty())
                 .orElseThrow(() -> {
                     log.warn("Refresh token inválido");
                     return new BusinessException("Refresh token inválido");

@@ -21,6 +21,7 @@ import com.danmaciel.agendador_backend.feature.auth.application.dto.TokenRespons
 import com.danmaciel.agendador_backend.feature.auth.domain.entity.RefreshToken;
 import com.danmaciel.agendador_backend.feature.auth.domain.repository.RefreshTokenRepository;
 import com.danmaciel.agendador_backend.feature.auth.domain.service.JwtService;
+import com.danmaciel.agendador_backend.feature.auth.domain.service.RefreshTokenFingerprint;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Role;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
@@ -75,6 +76,7 @@ class LoginUseCaseTest {
         assertNotNull(result);
         assertEquals("token-jwt", result.token());
         assertEquals(3600000L, result.expiracao());
-        assertNotNull(result.refreshToken());
+        assertEquals(refreshToken.getIssuedSecret(), result.refreshToken());
+        assertEquals(RefreshTokenFingerprint.fingerprint(result.refreshToken()), refreshToken.getToken());
     }
 }

@@ -6,7 +6,7 @@ Projeto demonstrativo de backend para gerenciamento de **usuários, serviços e 
 
 - **Stack:** Java 21, Spring Boot 4, Spring Security, Spring Data JPA e Flyway.
 - **Persistência:** H2 no perfil de desenvolvimento e PostgreSQL no perfil `prod`.
-- **Segurança:** autenticação JWT e refresh token, com configurações de produção exigidas via variáveis de ambiente.
+- **Segurança:** autenticação JWT e refresh token, com configurações de produção exigidas via variáveis de ambiente. O cadastro é público; consulta/listagem de usuários exigem autenticação. **A autorização granular por usuário ainda precisa de revisão.**
 - **Organização:** `feature/*/application/usecase`, `domain` e `infrastructure/controller`.
 - **Qualidade:** testes automatizados Maven via GitHub Actions.
 
@@ -63,6 +63,9 @@ Leia [SECURITY_SETUP.md](SECURITY_SETUP.md) e use [`.env.example`](.env.example)
 - Flyway mantém o esquema versionado; ambientes devem ser configurados explicitamente.
 - O Docker Compose disponível não constitui uma implantação completa da aplicação.
 - Os testes automatizados validam os cenários implementados, mas não substituem testes ponta a ponta e uma revisão de segurança de produção.
+- A consulta por ID exige autenticação, mas isso **não garante acesso restrito ao próprio perfil**. A regra de propriedade ou autorização administrativa deve ser definida antes de expor a API.
+- O refresh token atual é um identificador UUID em texto persistido no banco. Não há fingerprint/hash em repouso, família de tokens ou detecção robusta de replay, portanto não é uma implementação de sessão pronta para produção.
+- O perfil padrão utiliza credenciais de administrador e JWT de desenvolvimento: execute apenas em ambiente descartável e isolado. Não publique a porta HTTP como serviço externo.
 
 ## Escopo
 

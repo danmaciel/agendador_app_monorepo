@@ -64,6 +64,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@userProfileAccessPolicy.canRead(authentication, #id)")
     @Operation(summary = "Buscar usuário por ID", description = "Retorna os dados de um usuário específico")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Usuário encontrado"),

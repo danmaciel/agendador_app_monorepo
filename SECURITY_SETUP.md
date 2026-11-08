@@ -9,7 +9,7 @@
 
 ## Limites de autenticacao ainda abertos
 
-- A regra de autorizacao HTTP permite **somente** `POST /api/v1/usuario` sem autenticacao para cadastro. Leitura e listagem de usuarios exigem JWT; uma regra de proprietario (ou admin) para leitura por ID ainda deve ser definida. Autenticacao por si so nao impede que uma conta leia o perfil de outra.
+- A regra de autorizacao HTTP permite **somente** `POST /api/v1/usuario` sem autenticacao para cadastro. A consulta `GET /api/v1/usuario/{id}` exige autenticacao e autoriza apenas o proprio usuario ou administradores, antes de buscar o ID solicitado; listagem, promocao e remocao possuem regras administrativas. Nao generalize essa politica para outros recursos sem testes especificos.
 - A tabela de refresh tokens armazena o UUID opaco em texto, nao um fingerprint. A rotacao atual nao implementa familias de token e detecao de replay robusta; nao documentar como revogacao distribuida ou protecao de sessao pronta para producao.
 - O perfil de desenvolvimento possui login/senha inicial conhecidos. Nunca utilizar esse perfil em servidor acessivel externamente. O perfil `prod` exige credenciais fornecidas fora do codigo.
 - Antes de ativar qualquer uso real, adicionar testes de autorizacao por usuario, revisar gestao de sessao, rate limiting e tratamento de erros. Valores antigos publicados precisam ser rotacionados se tiverem sido usados fora de laboratorio.

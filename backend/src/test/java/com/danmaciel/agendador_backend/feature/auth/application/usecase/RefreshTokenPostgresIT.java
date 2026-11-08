@@ -1,6 +1,9 @@
 package com.danmaciel.agendador_backend.feature.auth.application.usecase;
 
 import com.danmaciel.agendador_backend.feature.auth.domain.entity.RefreshToken;
+import com.danmaciel.agendador_backend.feature.auth.application.dto.LoginRequest;
+import com.danmaciel.agendador_backend.shared.exception.BusinessException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import com.danmaciel.agendador_backend.feature.auth.domain.repository.RefreshTokenRepository;
 import com.danmaciel.agendador_backend.feature.auth.domain.service.RefreshTokenFingerprint;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
@@ -49,6 +52,12 @@ class RefreshTokenPostgresIT {
     @Autowired
     private RefreshTokenUseCase refresh;
 
+    @Autowired
+    private LoginUseCase login;
+
+    @Autowired
+    private PasswordEncoder passwords;
+
     @Test
     void sameRefreshSecretHasOnlyOneSuccessfulSuccessorAcrossTransactions() throws Exception {
         Usuario account = users.saveAndFlush(new Usuario(
@@ -85,11 +94,70 @@ class RefreshTokenPostgresIT {
             String successor = firstSuccessor != null ? firstSuccessor : secondSuccessor;
             assertFalse(tokens.findByToken(oldFingerprint).isPresent());
             assertTrue(tokens.findByToken(RefreshTokenFingerprint.fingerprint(successor)).isPresent());
-            assertEquals(1L, tokens.count(), "Only the single successor row should remain");
+            assertEquals(1L, tokens.countByUsuarioId(account.getId()),
+                    "Only the single successor row should remain for the account");
         } finally {
             start.countDown();
             workers.shutdownNow();
             assertTrue(workers.awaitTermination(10, TimeUnit.SECONDS));
         }
     }
+    @Test
+    void newLoginWinsOverConcurrentRefreshAndRemainsOnlyValidSession() throws Exception {
+        String username = "login_refresh_" + UUID.randomUUID();
+        String password = "local-test-password-not-for-production";
+        Usuario account = users.saveAndFlush(new Usuario(
+                username, passwords.encode(password), "Concurrent test account"));
+        RefreshToken existing = tokens.saveAndFlush(new RefreshToken(account, 60));
+        String oldSecret = existing.getIssuedSecret();
+
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        var workers = Executors.newFixedThreadPool(2);
+        try {
+            Callable<String> doLogin = () -> {
+                ready.countDown();
+                if (!start.await(15, TimeUnit.SECONDS)) {
+                    throw new AssertionError("Login barrier expired");
+                }
+                return login.execute(new LoginRequest(username, password)).refreshToken();
+            };
+            Callable<String> doRefresh = () -> {
+                ready.countDown();
+                if (!start.await(15, TimeUnit.SECONDS)) {
+                    throw new AssertionError("Refresh barrier expired");
+                }
+                try {
+                    return refresh.execute(oldSecret).refreshToken();
+                } catch (BusinessException rejected) {
+                    return null;
+                }
+            };
+            var loginResult = workers.submit(doLogin);
+            var refreshResult = workers.submit(doRefresh);
+            assertTrue(ready.await(15, TimeUnit.SECONDS));
+            start.countDown();
+
+            String loginSecret = loginResult.get(30, TimeUnit.SECONDS);
+            String refreshSecret = refreshResult.get(30, TimeUnit.SECONDS);
+
+            assertNotNull(loginSecret);
+            assertEquals(1L, tokens.countByUsuarioId(account.getId()),
+                    "Only the new-login session may remain");
+            assertTrue(tokens.findByToken(
+                    RefreshTokenFingerprint.fingerprint(loginSecret)).isPresent());
+            assertFalse(tokens.findByToken(
+                    RefreshTokenFingerprint.fingerprint(oldSecret)).isPresent());
+            if (refreshSecret != null) {
+                assertFalse(tokens.findByToken(
+                        RefreshTokenFingerprint.fingerprint(refreshSecret)).isPresent(),
+                        "An earlier refresh must be superseded by the new login");
+            }
+        } finally {
+            start.countDown();
+            workers.shutdownNow();
+            assertTrue(workers.awaitTermination(10, TimeUnit.SECONDS));
+        }
+    }
+
 }

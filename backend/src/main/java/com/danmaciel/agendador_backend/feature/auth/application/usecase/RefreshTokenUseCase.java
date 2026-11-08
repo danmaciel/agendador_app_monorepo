@@ -36,9 +36,9 @@ public class RefreshTokenUseCase {
         // Prefer fingerprint; accept existing plaintext UUID rows only until
         // their next successful refresh, when they are replaced by hashed rows.
         RefreshToken token = refreshTokenRepository
-                .findByToken(RefreshTokenFingerprint.fingerprint(refreshToken))
+                .findByTokenForUpdate(RefreshTokenFingerprint.fingerprint(refreshToken))
                 .or(() -> RefreshTokenFingerprint.isLegacyUuid(refreshToken)
-                        ? refreshTokenRepository.findByToken(refreshToken)
+                        ? refreshTokenRepository.findByTokenForUpdate(refreshToken)
                         : java.util.Optional.empty())
                 .orElseThrow(() -> {
                     log.warn("Refresh token inválido");

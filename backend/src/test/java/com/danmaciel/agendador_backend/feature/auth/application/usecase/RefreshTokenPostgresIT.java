@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(properties = {
         "spring.jpa.hibernate.ddl-auto=validate",
+        "spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect",
         "spring.h2.console.enabled=false"
 })
 @Testcontainers

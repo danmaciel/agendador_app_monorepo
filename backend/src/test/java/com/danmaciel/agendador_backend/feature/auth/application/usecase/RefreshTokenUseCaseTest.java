@@ -56,7 +56,7 @@ class RefreshTokenUseCaseTest {
         RefreshToken newRefreshToken = new RefreshToken(usuario, 10080);
         newRefreshToken.setId(2L);
 
-        when(refreshTokenRepository.findByToken(RefreshTokenFingerprint.fingerprint(refreshTokenString)))
+        when(refreshTokenRepository.findByTokenForUpdate(RefreshTokenFingerprint.fingerprint(refreshTokenString)))
                 .thenReturn(Optional.of(refreshToken));
         when(jwtService.generateToken(any(Usuario.class))).thenReturn("new-jwt-token");
         when(jwtService.getExpiration()).thenReturn(3600000L);
@@ -78,7 +78,7 @@ class RefreshTokenUseCaseTest {
         usuario.setId(42L);
         usuario.setAtivo(false);
         RefreshToken refreshToken = new RefreshToken(usuario, 10080);
-        when(refreshTokenRepository.findByToken(
+        when(refreshTokenRepository.findByTokenForUpdate(
                 RefreshTokenFingerprint.fingerprint("refresh-de-conta-desativada")))
                 .thenReturn(Optional.of(refreshToken));
 
@@ -97,9 +97,9 @@ class RefreshTokenUseCaseTest {
         RefreshToken previous = new RefreshToken(usuario, 90);
         RefreshToken issued = new RefreshToken(usuario, 90);
 
-        when(refreshTokenRepository.findByToken(RefreshTokenFingerprint.fingerprint(legacy)))
+        when(refreshTokenRepository.findByTokenForUpdate(RefreshTokenFingerprint.fingerprint(legacy)))
                 .thenReturn(Optional.empty());
-        when(refreshTokenRepository.findByToken(legacy)).thenReturn(Optional.of(previous));
+        when(refreshTokenRepository.findByTokenForUpdate(legacy)).thenReturn(Optional.of(previous));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(issued);
         when(jwtService.generateToken(any(Usuario.class))).thenReturn("access-jwt");
         when(jwtService.getExpiration()).thenReturn(3600000L);
@@ -113,7 +113,7 @@ class RefreshTokenUseCaseTest {
     @Test
     void naoAceitaFingerprintDoBancoComoCredencialBearer() {
         String leakedFingerprint = RefreshTokenFingerprint.fingerprint("secret-for-test");
-        when(refreshTokenRepository.findByToken(
+        when(refreshTokenRepository.findByTokenForUpdate(
                 RefreshTokenFingerprint.fingerprint(leakedFingerprint))).thenReturn(Optional.empty());
 
         assertThrows(BusinessException.class, () -> refreshTokenUseCase.execute(leakedFingerprint));
@@ -127,7 +127,7 @@ class RefreshTokenUseCaseTest {
         // Arrange
         String refreshTokenString = "invalid-token";
 
-        when(refreshTokenRepository.findByToken(RefreshTokenFingerprint.fingerprint(refreshTokenString)))
+        when(refreshTokenRepository.findByTokenForUpdate(RefreshTokenFingerprint.fingerprint(refreshTokenString)))
                 .thenReturn(Optional.empty());
 
         // Act & Assert
@@ -145,7 +145,7 @@ class RefreshTokenUseCaseTest {
         refreshToken.setId(1L);
         refreshToken.setExpirationDate(LocalDateTime.now().minusDays(1));
 
-        when(refreshTokenRepository.findByToken(RefreshTokenFingerprint.fingerprint(refreshTokenString)))
+        when(refreshTokenRepository.findByTokenForUpdate(RefreshTokenFingerprint.fingerprint(refreshTokenString)))
                 .thenReturn(Optional.of(refreshToken));
 
         // Act & Assert

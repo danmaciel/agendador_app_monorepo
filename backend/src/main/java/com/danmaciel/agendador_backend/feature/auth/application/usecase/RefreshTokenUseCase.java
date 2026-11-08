@@ -38,6 +38,13 @@ public class RefreshTokenUseCase {
                     return new BusinessException("Refresh token inválido");
                 });
 
+        // A refresh session must not outlive the account's eligibility.
+        // Reject before deleting/issuing a successor or minting an access JWT.
+        if (!Boolean.TRUE.equals(token.getUsuario().getAtivo())) {
+            log.warn("Refresh recusado: conta desativada");
+            throw new BusinessException("Refresh token inválido");
+        }
+
         if (token.isExpired()) {
             refreshTokenRepository.delete(token);
             log.warn("Refresh token expirado para usuário: {}", token.getUsuario().getLogin());

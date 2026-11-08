@@ -13,3 +13,5 @@
 - A tabela de refresh tokens armazena o UUID opaco em texto, nao um fingerprint. A rotacao atual nao implementa familias de token e detecao de replay robusta; nao documentar como revogacao distribuida ou protecao de sessao pronta para producao.
 - O perfil de desenvolvimento possui login/senha inicial conhecidos. Nunca utilizar esse perfil em servidor acessivel externamente. O perfil `prod` exige credenciais fornecidas fora do codigo.
 - Antes de ativar qualquer uso real, adicionar testes de autorizacao por usuario, revisar gestao de sessao, rate limiting e tratamento de erros. Valores antigos publicados precisam ser rotacionados se tiverem sido usados fora de laboratorio.
+
+- O caso de uso de refresh agora recusa explicitamente a emissao de novos access JWTs quando a conta vinculada esta desativada. Isto nao revoga access JWTs previamente emitidos nem substitui verificacao atomica de estado da conta com a rotacao; conferir essa corrida numa futura revisao do armazenamento.

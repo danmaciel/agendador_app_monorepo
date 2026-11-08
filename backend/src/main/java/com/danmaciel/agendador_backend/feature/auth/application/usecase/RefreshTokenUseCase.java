@@ -10,6 +10,7 @@ import com.danmaciel.agendador_backend.feature.auth.application.dto.TokenRespons
 import com.danmaciel.agendador_backend.feature.auth.domain.entity.RefreshToken;
 import com.danmaciel.agendador_backend.feature.auth.domain.repository.RefreshTokenRepository;
 import com.danmaciel.agendador_backend.feature.auth.domain.service.JwtService;
+import com.danmaciel.agendador_backend.feature.auth.domain.service.RefreshTokenFingerprint;
 import com.danmaciel.agendador_backend.shared.exception.BusinessException;
 
 @Component
@@ -32,7 +33,11 @@ public class RefreshTokenUseCase {
     public TokenResponse execute(String refreshToken) {
         log.debug("Tentativa de refresh token");
 
-        RefreshToken token = refreshTokenRepository.findByToken(refreshToken)
+        // Prefer fingerprint; accept existing plaintext UUID rows only until
+        // their next successful refresh, when they are replaced by hashed rows.
+        RefreshToken token = refreshTokenRepository
+                .findByToken(RefreshTokenFingerprint.fingerprint(refreshToken))
+                .or(() -> refreshTokenRepository.findByToken(refreshToken))
                 .orElseThrow(() -> {
                     log.warn("Refresh token inválido");
                     return new BusinessException("Refresh token inválido");
@@ -60,6 +65,6 @@ public class RefreshTokenUseCase {
 
         log.info("Refresh token bem-sucedido para usuário: {}", token.getUsuario().getLogin());
 
-        return new TokenResponse(newToken, jwtService.getExpiration(), newRefreshToken.getToken());
+        return new TokenResponse(newToken, jwtService.getExpiration(), newRefreshToken.getIssuedSecret());
     }
 }

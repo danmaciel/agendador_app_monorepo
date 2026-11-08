@@ -56,6 +56,6 @@ public class LoginUseCase {
 
         log.info("Login bem-sucedido para usuário: {}", usuario.getLogin());
 
-        return new TokenResponse(token, jwtService.getExpiration(), refreshToken.getToken());
+        return new TokenResponse(token, jwtService.getExpiration(), refreshToken.getIssuedSecret());
     }
 }

@@ -10,7 +10,7 @@
 ## Limites de autenticacao ainda abertos
 
 - A regra de autorizacao HTTP permite **somente** `POST /api/v1/usuario` sem autenticacao para cadastro. A consulta `GET /api/v1/usuario/{id}` exige autenticacao e autoriza apenas o proprio usuario ou administradores, antes de buscar o ID solicitado; listagem, promocao e remocao possuem regras administrativas. Nao generalize essa politica para outros recursos sem testes especificos.
-- A tabela de refresh tokens armazena o UUID opaco em texto, nao um fingerprint. A rotacao atual nao implementa familias de token e detecao de replay robusta; nao documentar como revogacao distribuida ou protecao de sessao pronta para producao.
+- Novos refresh tokens sao armazenados apenas como fingerprint SHA-256. A compatibilidade transitoria com tokens UUIDv4 legados mantem registros antigos em texto ate rotacao ou expiracao; ver [plano de transicao](docs/REFRESH_TOKEN_TRANSITION.md). A rotacao ainda nao implementa familias, replay robusto ou consumo unico concorrente. Nao anunciar como sessao pronta para producao.
 - O perfil de desenvolvimento possui login/senha inicial conhecidos. Nunca utilizar esse perfil em servidor acessivel externamente. O perfil `prod` exige credenciais fornecidas fora do codigo.
 - Antes de ativar qualquer uso real, adicionar testes de autorizacao por usuario, revisar gestao de sessao, rate limiting e tratamento de erros. Valores antigos publicados precisam ser rotacionados se tiverem sido usados fora de laboratorio.
 

@@ -64,7 +64,7 @@ Leia [SECURITY_SETUP.md](SECURITY_SETUP.md) e use [`.env.example`](.env.example)
 - O Docker Compose disponível não constitui uma implantação completa da aplicação.
 - Os testes automatizados validam os cenários implementados, mas não substituem testes ponta a ponta e uma revisão de segurança de produção.
 - A consulta de usuário por ID exige autenticação e usa autorização por proprietário ou administrador, verificada antes da busca do perfil. O restante dos contratos de autorização exige revisão separada antes de qualquer exposição pública.
-- O refresh token atual é um identificador UUID em texto persistido no banco. Não há fingerprint/hash em repouso, família de tokens ou detecção robusta de replay, portanto não é uma implementação de sessão pronta para produção.
+- Novos refresh tokens são segredos opacos de 256 bits, persistidos apenas como **fingerprint SHA-256**. Tokens legados em UUIDv4 ainda são aceitos temporariamente até sua rotação. Não há família de tokens, detecção robusta de replay ou garantia de consumo único sob concorrência. Ver [plano de transição](docs/REFRESH_TOKEN_TRANSITION.md).
 - O perfil padrão utiliza credenciais de administrador e JWT de desenvolvimento: execute apenas em ambiente descartável e isolado. Não publique a porta HTTP como serviço externo.
 
 ## Escopo

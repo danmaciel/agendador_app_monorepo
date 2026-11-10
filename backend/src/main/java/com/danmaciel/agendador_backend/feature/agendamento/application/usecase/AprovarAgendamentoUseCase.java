@@ -38,6 +38,11 @@ public class AprovarAgendamentoUseCase {
         Agendamento agendamento = agendamentoRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
 
+        if (agendamento.getStatus() != StatusAgendamento.PENDENTE) {
+            throw new com.danmaciel.agendador_backend.shared.exception.BusinessException(
+                    "Somente agendamentos pendentes podem ser aprovados");
+        }
+
         for (Servico servico : agendamento.getServicos()) {
             if (!servico.getAtivo()) {
                 throw new RecursoNaoEncontradoException("Serviço '" + servico.getNome() + "' não está mais disponível");

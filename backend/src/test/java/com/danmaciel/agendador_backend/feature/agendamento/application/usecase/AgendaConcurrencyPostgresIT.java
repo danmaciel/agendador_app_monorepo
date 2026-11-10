@@ -50,6 +50,7 @@ class AgendaConcurrencyPostgresIT {
     @Autowired private AgendamentoRepository agendamentos;
     @Autowired private CriarAgendamentoUseCase criar;
     @Autowired private AprovarAgendamentoUseCase aprovar;
+    @Autowired private AtualizarAgendamentoUseCase atualizar;
 
     @Test
     void onlyOneConcurrentRequestReservesTheSameTimeSlot() throws Exception {
@@ -140,6 +141,78 @@ class AgendaConcurrencyPostgresIT {
             start.countDown();
             pool.shutdownNow();
             assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    void onlyOneOfTwoConcurrentUpdatesCanMoveIntoTheSameSlot() throws Exception {
+        Usuario firstUser = usuarios.saveAndFlush(
+                new Usuario("update_first_" + UUID.randomUUID(), "test", "First"));
+        Usuario secondUser = usuarios.saveAndFlush(
+                new Usuario("update_second_" + UUID.randomUUID(), "test", "Second"));
+        Servico servico = servicos.saveAndFlush(
+                new Servico("Update test " + UUID.randomUUID(), "Test service",
+                        new BigDecimal("20.00"), 30));
+        LocalDate date = LocalDate.now().plusDays(28);
+        LocalTime targetTime = LocalTime.of(12, 0);
+
+        Agendamento firstBooking = new Agendamento(firstUser, date, LocalTime.of(8, 0));
+        firstBooking.setServicos(Set.of(servico));
+        firstBooking.setTempoTotal(30);
+        firstBooking = agendamentos.saveAndFlush(firstBooking);
+
+        Agendamento secondBooking = new Agendamento(secondUser, date, LocalTime.of(9, 0));
+        secondBooking.setServicos(Set.of(servico));
+        secondBooking.setTempoTotal(30);
+        secondBooking = agendamentos.saveAndFlush(secondBooking);
+
+        Long firstId = firstBooking.getId();
+        Long secondId = secondBooking.getId();
+        AgendamentoRequest firstRequest = new AgendamentoRequest(
+                firstUser.getId(), date, targetTime, Set.of(servico.getId()));
+        AgendamentoRequest secondRequest = new AgendamentoRequest(
+                secondUser.getId(), date, targetTime, Set.of(servico.getId()));
+
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        var pool = Executors.newFixedThreadPool(2);
+        try {
+            var a = pool.submit(() -> attemptUpdate(firstId, firstRequest, ready, start));
+            var b = pool.submit(() -> attemptUpdate(secondId, secondRequest, ready, start));
+            assertTrue(ready.await(15, TimeUnit.SECONDS));
+            start.countDown();
+            boolean aSucceeded = a.get(40, TimeUnit.SECONDS);
+            boolean bSucceeded = b.get(40, TimeUnit.SECONDS);
+
+            assertEquals(1, (aSucceeded ? 1 : 0) + (bSucceeded ? 1 : 0),
+                    "Only one update may occupy the target interval");
+            var appointments = agendamentos.findByDataAndAtivoTrue(date);
+            assertEquals(2, appointments.size(), "Neither original booking may be lost");
+            assertEquals(1, appointments.stream()
+                    .filter(appointment -> appointment.getHorario().equals(targetTime))
+                    .count());
+            assertEquals(1, appointments.stream()
+                    .filter(appointment -> appointment.getHorario().equals(LocalTime.of(8, 0))
+                            || appointment.getHorario().equals(LocalTime.of(9, 0)))
+                    .count(), "The rejected update must retain its original time");
+        } finally {
+            start.countDown();
+            pool.shutdownNow();
+            assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+        }
+    }
+
+    private boolean attemptUpdate(Long appointmentId, AgendamentoRequest request,
+                                  CountDownLatch ready, CountDownLatch start) throws Exception {
+        ready.countDown();
+        if (!start.await(15, TimeUnit.SECONDS)) {
+            throw new AssertionError("Concurrent update barrier timed out");
+        }
+        try {
+            atualizar.execute(appointmentId, request);
+            return true;
+        } catch (AgendamentoConflitoException conflict) {
+            return false;
         }
     }
 

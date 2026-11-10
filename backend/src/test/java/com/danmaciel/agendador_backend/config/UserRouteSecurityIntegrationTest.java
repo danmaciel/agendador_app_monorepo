@@ -172,9 +172,11 @@ class UserRouteSecurityIntegrationTest {
 
         mockMvc.perform(get("/api/v1/agendamento/{id}", appointment.getId()).with(otherClient))
                 .andExpect(status().isForbidden());
+        String validBody = "{\"usuarioId\":" + owner.getId()
+                + ",\"data\":\"2099-01-03\",\"horario\":\"15:00\",\"servicoIds\":[]}";
         mockMvc.perform(put("/api/v1/agendamento/{id}", appointment.getId())
                         .with(otherClient).contentType("application/json")
-                        .content("{}"))
+                        .content(validBody))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/v1/agendamento/{id}", appointment.getId()).with(ownerClient))

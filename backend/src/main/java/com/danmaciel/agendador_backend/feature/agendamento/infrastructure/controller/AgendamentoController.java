@@ -117,6 +117,7 @@ public class AgendamentoController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@appointmentAccessPolicy.canAccess(authentication, #id)")
     @Operation(summary = "Buscar agendamento por ID", description = "Retorna os dados de um agendamento específico")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Agendamento encontrado"),
@@ -220,6 +221,7 @@ public class AgendamentoController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@appointmentAccessPolicy.canAccess(authentication, #id)")
     @Operation(summary = "Atualizar agendamento", description = "Atualiza os dados de um agendamento existente")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Agendamento atualizado com sucesso"),

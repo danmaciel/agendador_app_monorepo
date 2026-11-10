@@ -7,6 +7,10 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
 
@@ -30,6 +34,9 @@ class UserRouteSecurityIntegrationTest {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private AgendamentoRepository agendamentoRepository;
 
     @Test
     void anonymousUserCannotReadAnotherAccountById() throws Exception {
@@ -148,6 +155,34 @@ class UserRouteSecurityIntegrationTest {
         mockMvc.perform(post("/api/v1/agendamento/criar-forcado")
                         .with(client).contentType("application/json").content(body))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void appointmentIdRoutesRejectNonOwnerAndAllowOwnerAndAdmin() throws Exception {
+        Usuario owner = createUser("booking_id_owner");
+        Usuario other = createUser("booking_id_other");
+        Agendamento appointment = agendamentoRepository.saveAndFlush(
+                new Agendamento(owner, LocalDate.of(2099, 1, 2), LocalTime.of(14, 0)));
+        var otherClient = user(other.getLogin()).authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CLIENTE"));
+        var ownerClient = user(owner.getLogin()).authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CLIENTE"));
+        var admin = user("administrator-test").authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"));
+
+        mockMvc.perform(get("/api/v1/agendamento/{id}", appointment.getId()).with(otherClient))
+                .andExpect(status().isForbidden());
+        String validBody = "{\"usuarioId\":" + owner.getId()
+                + ",\"data\":\"2099-01-03\",\"horario\":\"15:00\",\"servicoIds\":[]}";
+        mockMvc.perform(put("/api/v1/agendamento/{id}", appointment.getId())
+                        .with(otherClient).contentType("application/json")
+                        .content(validBody))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/v1/agendamento/{id}", appointment.getId()).with(ownerClient))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/agendamento/{id}", appointment.getId()).with(admin))
+                .andExpect(status().isOk());
     }
 
     private Usuario createUser(String prefix) {

@@ -57,6 +57,14 @@ Para PostgreSQL, configure as variáveis de ambiente exigidas em `backend/src/ma
 
 Leia [SECURITY_SETUP.md](SECURITY_SETUP.md) e use [`.env.example`](.env.example) como referência. **Não publique credenciais reais.**
 
+## Concorrência da agenda compartilhada
+
+A criação normal, atualização e aprovação de agendamentos adquirem um bloqueio transacional no banco (`SELECT ... FOR UPDATE` sobre uma única linha criada na migração Flyway V8) antes de consultar conflitos de horário. A linha permanece bloqueada até a transação concluir, serializando essas operações entre instâncias da aplicação que compartilhem o mesmo banco.
+
+Essa é uma **estratégia conservadora de agenda única**: operações independentes, inclusive de datas diferentes, também aguardam a mesma trava. Ela prioriza a consistência do exemplo em detrimento da vazão. A criação **forçada**, exclusiva de administrador, mantém o comportamento intencional de ignorar conflitos e não usa essa trava; portanto ainda pode criar sobreposições.
+
+O teste `AgendaConcurrencyPostgresIT` tenta criar duas reservas simultâneas do mesmo intervalo com usuários diferentes em PostgreSQL e espera somente uma confirmação. Ele roda no perfil `postgres-it`, que requer Docker/Testcontainers. A estratégia não constitui prova de capacidade de produção, nem resolve requisitos futuros de múltiplos profissionais, fusos horários, horários que ultrapassam a meia-noite ou planejamento de recursos.
+
 ## Decisões e limitações
 
 - Separação por funcionalidade e casos de uso ajuda a manter regras de negócio testáveis.

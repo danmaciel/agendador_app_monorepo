@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import com.danmaciel.agendador_backend.feature.agendamento.infrastructure.lock.AgendaWriteLock;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
@@ -24,16 +25,19 @@ import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoExce
 public class AtualizarAgendamentoUseCase {
 
     private final AgendamentoRepository agendamentoRepository;
+    private final AgendaWriteLock agendaWriteLock;
     private final ServicoRepository servicoRepository;
 
     public AtualizarAgendamentoUseCase(AgendamentoRepository agendamentoRepository,
-            ServicoRepository servicoRepository) {
+            ServicoRepository servicoRepository, AgendaWriteLock agendaWriteLock) {
         this.agendamentoRepository = agendamentoRepository;
+        this.agendaWriteLock = agendaWriteLock;
         this.servicoRepository = servicoRepository;
     }
 
     @Transactional
     public AgendamentoResponse execute(Long id, AgendamentoRequest request) {
+        agendaWriteLock.acquire();
         Agendamento agendamento = agendamentoRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
 

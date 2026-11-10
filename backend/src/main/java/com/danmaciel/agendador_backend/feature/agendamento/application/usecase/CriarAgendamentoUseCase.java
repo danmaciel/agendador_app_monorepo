@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import com.danmaciel.agendador_backend.feature.agendamento.infrastructure.lock.AgendaWriteLock;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
@@ -33,18 +34,22 @@ public class CriarAgendamentoUseCase {
     private static final Logger log = LoggerFactory.getLogger(CriarAgendamentoUseCase.class);
 
     private final AgendamentoRepository agendamentoRepository;
+    private final AgendaWriteLock agendaWriteLock;
     private final UsuarioRepository usuarioRepository;
     private final ServicoRepository servicoRepository;
 
     public CriarAgendamentoUseCase(AgendamentoRepository agendamentoRepository,
-            UsuarioRepository usuarioRepository, ServicoRepository servicoRepository) {
+            UsuarioRepository usuarioRepository, ServicoRepository servicoRepository,
+            AgendaWriteLock agendaWriteLock) {
         this.agendamentoRepository = agendamentoRepository;
+        this.agendaWriteLock = agendaWriteLock;
         this.usuarioRepository = usuarioRepository;
         this.servicoRepository = servicoRepository;
     }
 
     @Transactional
     public AgendamentoResponse execute(AgendamentoRequest request) {
+        agendaWriteLock.acquire();
         log.info("Tentativa de criar agendamento para usuário {} na data {} horário {}", 
                 request.usuarioId(), request.data(), request.horario());
         

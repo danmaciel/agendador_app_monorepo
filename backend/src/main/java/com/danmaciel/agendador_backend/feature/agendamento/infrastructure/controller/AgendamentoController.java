@@ -84,6 +84,7 @@ public class AgendamentoController {
     }
 
     @PostMapping
+    @PreAuthorize("@userProfileAccessPolicy.canRead(authentication, #request.usuarioId())")
     @Operation(summary = "Criar agendamento", description = "Cria um novo agendamento")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Agendamento criado com sucesso"),
@@ -94,6 +95,7 @@ public class AgendamentoController {
     }
 
     @PostMapping("/criar-forcado")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Criar agendamento forçado", description = "Cria um agendamento ignorando validações de horário")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Agendamento forçado criado com sucesso"),
@@ -104,6 +106,7 @@ public class AgendamentoController {
     }
 
     @PostMapping("/aceitar-data-sugestao")
+    @PreAuthorize("@userProfileAccessPolicy.canRead(authentication, #request.usuarioId())")
     @Operation(summary = "Aceitar data sugestiva", description = "Cria um agendamento aceitando a data sugerida pelo sistema")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Agendamento criado com sucesso"),
@@ -124,6 +127,7 @@ public class AgendamentoController {
     }
 
     @GetMapping("/meus-agendamentos")
+    @PreAuthorize("@userProfileAccessPolicy.canRead(authentication, #usuarioId)")
     @Operation(summary = "Listar meus agendamentos", description = "Lista os agendamentos do usuário logado")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de agendamentos retornada com sucesso")
@@ -144,6 +148,7 @@ public class AgendamentoController {
     }
 
     @GetMapping("/historico")
+    @PreAuthorize("@userProfileAccessPolicy.canRead(authentication, #usuarioId)")
     @Operation(summary = "Listar histórico do cliente", description = "Lista o histórico de agendamentos do cliente com informações adicionais (valor total,区分 passado/futuro)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Histórico retornado com sucesso")
@@ -164,6 +169,7 @@ public class AgendamentoController {
     }
 
     @GetMapping("/historico/aprovados-por-dia")
+    @PreAuthorize("@userProfileAccessPolicy.canRead(authentication, #usuarioId)")
     @Operation(summary = "Listar histórico agrupado por dia", description = "Lista agendamentos APROVADOS do cliente agrupados por data")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Histórico retornado com sucesso")

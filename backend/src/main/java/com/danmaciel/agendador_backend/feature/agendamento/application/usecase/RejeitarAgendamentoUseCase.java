@@ -9,6 +9,8 @@ import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusA
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
 import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
+import com.danmaciel.agendador_backend.shared.exception.BusinessException;
+import com.danmaciel.agendador_backend.feature.agendamento.infrastructure.lock.AgendaWriteLock;
 
 import java.util.stream.Collectors;
 
@@ -16,15 +18,23 @@ import java.util.stream.Collectors;
 public class RejeitarAgendamentoUseCase {
 
     private final AgendamentoRepository agendamentoRepository;
+    private final AgendaWriteLock agendaWriteLock;
 
-    public RejeitarAgendamentoUseCase(AgendamentoRepository agendamentoRepository) {
+    public RejeitarAgendamentoUseCase(AgendamentoRepository agendamentoRepository,
+            AgendaWriteLock agendaWriteLock) {
         this.agendamentoRepository = agendamentoRepository;
+        this.agendaWriteLock = agendaWriteLock;
     }
 
     @Transactional
     public AgendamentoResponse execute(Long id) {
-        Agendamento agendamento = agendamentoRepository.findById(id)
+        agendaWriteLock.acquire();
+        Agendamento agendamento = agendamentoRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
+
+        if (agendamento.getStatus() != StatusAgendamento.PENDENTE) {
+            throw new BusinessException("Somente agendamentos pendentes podem ser rejeitados");
+        }
 
         agendamento.setStatus(StatusAgendamento.REJEITADO);
         agendamento = agendamentoRepository.save(agendamento);

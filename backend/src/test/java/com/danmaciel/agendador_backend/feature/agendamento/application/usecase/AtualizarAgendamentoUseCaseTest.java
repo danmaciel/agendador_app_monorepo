@@ -2,6 +2,8 @@ package com.danmaciel.agendador_backend.feature.agendamento.application.usecase;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -22,6 +24,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
+import com.danmaciel.agendador_backend.shared.exception.BusinessException;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
@@ -113,4 +117,26 @@ class AtualizarAgendamentoUseCaseTest {
         // Act & Assert
         assertThrows(AlteracaoForaDoPrazoException.class, () -> atualizarAgendamentoUseCase.execute(id, request));
     }
+
+    @Test
+    void naoPermiteAtualizarAgendamentosAprovadosOuRejeitados() {
+        Usuario usuario = new Usuario("teste", "senha", "Teste");
+        usuario.setId(1L);
+        AgendamentoRequest request = new AgendamentoRequest(
+                1L, LocalDate.now().plusDays(10), LocalTime.of(14, 0), Set.of(1L));
+
+        for (StatusAgendamento status : List.of(StatusAgendamento.APROVADO, StatusAgendamento.REJEITADO)) {
+            Long id = status == StatusAgendamento.APROVADO ? 10L : 11L;
+            Agendamento appointment = new Agendamento(
+                    usuario, LocalDate.now().plusDays(5), LocalTime.of(10, 0));
+            appointment.setId(id);
+            appointment.setStatus(status);
+            when(agendamentoRepository.findByIdAndAtivoTrue(id)).thenReturn(Optional.of(appointment));
+
+            assertThrows(BusinessException.class,
+                    () -> atualizarAgendamentoUseCase.execute(id, request));
+        }
+        verify(agendamentoRepository, never()).save(any(Agendamento.class));
+    }
+
 }

@@ -156,6 +156,72 @@ class CriarAgendamentoUseCaseTest {
     }
 
     @Test
+    void deveRejeitarSobreposicaoParcialDeIntervalos() {
+        Long usuarioId = 1L;
+        Long servicoId = 1L;
+        LocalDate data = LocalDate.now().plusDays(5);
+        Usuario solicitante = new Usuario("solicitante", "senha", "Solicitante");
+        solicitante.setId(usuarioId);
+        Usuario outro = new Usuario("outro", "senha", "Outro");
+        outro.setId(2L);
+
+        Servico servico = new Servico("Corte", "Corte", new BigDecimal("50.00"), 30);
+        servico.setId(servicoId);
+        Agendamento existente = new Agendamento(outro, data, LocalTime.of(10, 0));
+        existente.setId(77L);
+        existente.setTempoTotal(30);
+
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(solicitante));
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId))))
+                .thenReturn(Set.of(servico));
+        when(agendamentoRepository.findByDataAndAtivoTrue(data))
+                .thenReturn(List.of(existente));
+
+        // 10:15–10:45 conflicts with the existing 10:00–10:30 interval.
+        AgendamentoRequest request = new AgendamentoRequest(
+                usuarioId, data, LocalTime.of(10, 15), Set.of(servicoId));
+        assertThrows(AgendamentoConflitoException.class,
+                () -> criarAgendamentoUseCase.execute(request));
+    }
+
+    @Test
+    void devePermitirHorarioAdjacenteSemSobreposicao() {
+        Long usuarioId = 1L;
+        Long servicoId = 1L;
+        LocalDate data = LocalDate.now().plusDays(5);
+        Usuario solicitante = new Usuario("solicitante", "senha", "Solicitante");
+        solicitante.setId(usuarioId);
+        Usuario outro = new Usuario("outro", "senha", "Outro");
+        outro.setId(2L);
+
+        Servico servico = new Servico("Corte", "Corte", new BigDecimal("50.00"), 30);
+        servico.setId(servicoId);
+        Agendamento existente = new Agendamento(outro, data, LocalTime.of(10, 0));
+        existente.setId(77L);
+        existente.setTempoTotal(30);
+
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(solicitante));
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(servicoId))))
+                .thenReturn(Set.of(servico));
+        when(agendamentoRepository.findByDataAndAtivoTrue(data))
+                .thenReturn(List.of(existente));
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(
+                eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
+                .thenReturn(List.of());
+        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(invocation -> {
+            Agendamento salvo = invocation.getArgument(0);
+            salvo.setId(78L);
+            return salvo;
+        });
+
+        // 10:30–11:00 begins exactly when the existing interval ends.
+        AgendamentoRequest request = new AgendamentoRequest(
+                usuarioId, data, LocalTime.of(10, 30), Set.of(servicoId));
+        AgendamentoResponse result = criarAgendamentoUseCase.execute(request);
+        assertEquals(LocalTime.of(10, 30), result.horario());
+    }
+
+    @Test
     void deveLancarExcecaoQuandoJaPossuiAgendamentoNaSemana() {
         // Arrange
         Long usuarioId = 1L;

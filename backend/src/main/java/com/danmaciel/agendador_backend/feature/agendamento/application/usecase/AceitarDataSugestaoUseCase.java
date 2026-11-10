@@ -2,6 +2,7 @@ package com.danmaciel.agendador_backend.feature.agendamento.application.usecase;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.HashSet;
 import java.util.List;
@@ -16,29 +17,35 @@ import com.danmaciel.agendador_backend.feature.agendamento.application.dto.Agend
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
+import com.danmaciel.agendador_backend.feature.agendamento.infrastructure.lock.AgendaWriteLock;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
 import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
+import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
 
 @Component
 public class AceitarDataSugestaoUseCase {
 
     private final AgendamentoRepository agendamentoRepository;
+    private final AgendaWriteLock agendaWriteLock;
     private final UsuarioRepository usuarioRepository;
     private final ServicoRepository servicoRepository;
 
     public AceitarDataSugestaoUseCase(AgendamentoRepository agendamentoRepository,
-                                      UsuarioRepository usuarioRepository, ServicoRepository servicoRepository) {
+                                      UsuarioRepository usuarioRepository, ServicoRepository servicoRepository,
+                                      AgendaWriteLock agendaWriteLock) {
         this.agendamentoRepository = agendamentoRepository;
+        this.agendaWriteLock = agendaWriteLock;
         this.usuarioRepository = usuarioRepository;
         this.servicoRepository = servicoRepository;
     }
 
     @Transactional
     public AgendamentoResponse execute(AgendamentoRequest request) {
+        agendaWriteLock.acquire();
         Usuario usuario = usuarioRepository.findById(request.usuarioId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
 
@@ -59,13 +66,25 @@ public class AceitarDataSugestaoUseCase {
 
         Agendamento agendamentoExistente = agendamentosSemana.get(0);
 
-        for (Servico servico : servicosNovos) {
-            agendamentoExistente.addServico(servico);
-        }
-
-        int tempoTotal = agendamentoExistente.getServicos().stream()
+        // Calculate the proposed duration before mutating the managed entity.
+        Set<Servico> servicosCombinados = new HashSet<>(agendamentoExistente.getServicos());
+        servicosCombinados.addAll(servicosNovos);
+        int tempoTotal = servicosCombinados.stream()
                 .mapToInt(Servico::getTempoExecucao)
                 .sum();
+
+        LocalTime inicio = agendamentoExistente.getHorario();
+        LocalTime fim = inicio.plusMinutes(tempoTotal);
+        boolean conflito = agendamentoRepository
+                .findByDataAndAtivoTrue(agendamentoExistente.getData()).stream()
+                .filter(outro -> !outro.getId().equals(agendamentoExistente.getId()))
+                .anyMatch(outro -> inicio.isBefore(outro.getHorario().plusMinutes(outro.getTempoTotal()))
+                        && fim.isAfter(outro.getHorario()));
+        if (conflito) {
+            throw new AgendamentoConflitoException(null);
+        }
+
+        agendamentoExistente.setServicos(servicosCombinados);
         agendamentoExistente.setTempoTotal(tempoTotal);
 
         agendamentoExistente = agendamentoRepository.save(agendamentoExistente);

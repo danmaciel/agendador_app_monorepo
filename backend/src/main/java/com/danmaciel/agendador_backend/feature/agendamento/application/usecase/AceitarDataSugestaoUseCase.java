@@ -75,9 +75,10 @@ public class AceitarDataSugestaoUseCase {
 
         LocalTime inicio = agendamentoExistente.getHorario();
         LocalTime fim = inicio.plusMinutes(tempoTotal);
+        Long idAtual = agendamentoExistente.getId();
         boolean conflito = agendamentoRepository
                 .findByDataAndAtivoTrue(agendamentoExistente.getData()).stream()
-                .filter(outro -> !outro.getId().equals(agendamentoExistente.getId()))
+                .filter(outro -> !outro.getId().equals(idAtual))
                 .anyMatch(outro -> inicio.isBefore(outro.getHorario().plusMinutes(outro.getTempoTotal()))
                         && fim.isAfter(outro.getHorario()));
         if (conflito) {

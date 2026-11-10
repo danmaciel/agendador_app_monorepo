@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import com.danmaciel.agendador_backend.feature.agendamento.infrastructure.lock.AgendaWriteLock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
@@ -29,11 +30,14 @@ class AprovarAgendamentoUseCaseTest {
     @Mock
     private AgendamentoRepository agendamentoRepository;
 
+    @Mock
+    private AgendaWriteLock agendaWriteLock;
+
     private AprovarAgendamentoUseCase aprobarAgendamentoUseCase;
 
     @BeforeEach
     void setUp() {
-        aprobarAgendamentoUseCase = new AprovarAgendamentoUseCase(agendamentoRepository);
+        aprobarAgendamentoUseCase = new AprovarAgendamentoUseCase(agendamentoRepository, agendaWriteLock);
     }
 
     @Test

@@ -1,12 +1,16 @@
 package com.danmaciel.agendador_backend.feature.agendamento.application.usecase;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
+import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AprovarAgendamentoRequest;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
 import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
+import com.danmaciel.agendador_backend.shared.exception.AgendaConflitoException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,6 +49,7 @@ class AgendaConcurrencyPostgresIT {
     @Autowired private ServicoRepository servicos;
     @Autowired private AgendamentoRepository agendamentos;
     @Autowired private CriarAgendamentoUseCase criar;
+    @Autowired private AprovarAgendamentoUseCase aprovar;
 
     @Test
     void onlyOneConcurrentRequestReservesTheSameTimeSlot() throws Exception {
@@ -81,6 +86,74 @@ class AgendaConcurrencyPostgresIT {
             start.countDown();
             pool.shutdownNow();
             assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    void onlyOneOfTwoOverlappingPendingAppointmentsCanBeApproved() throws Exception {
+        Usuario firstUser = usuarios.saveAndFlush(
+                new Usuario("approve_first_" + UUID.randomUUID(), "test", "First"));
+        Usuario secondUser = usuarios.saveAndFlush(
+                new Usuario("approve_second_" + UUID.randomUUID(), "test", "Second"));
+        Servico servico = servicos.saveAndFlush(
+                new Servico("Approve test " + UUID.randomUUID(), "Test service",
+                        new BigDecimal("20.00"), 30));
+        LocalDate date = LocalDate.now().plusDays(21);
+        LocalTime time = LocalTime.of(11, 0);
+
+        // Existing pending reservations may overlap: conflict checking on approval
+        // must allow only one to become approved.
+        Agendamento firstPending = new Agendamento(firstUser, date, time);
+        firstPending.setServicos(Set.of(servico));
+        firstPending.setTempoTotal(30);
+        firstPending = agendamentos.saveAndFlush(firstPending);
+
+        Agendamento secondPending = new Agendamento(secondUser, date, time);
+        secondPending.setServicos(Set.of(servico));
+        secondPending.setTempoTotal(30);
+        secondPending = agendamentos.saveAndFlush(secondPending);
+
+        Long firstId = firstPending.getId();
+        Long secondId = secondPending.getId();
+        AprovarAgendamentoRequest request = new AprovarAgendamentoRequest(Set.of(servico.getId()));
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        var pool = Executors.newFixedThreadPool(2);
+        try {
+            var a = pool.submit(() -> attemptApproval(firstId, request, ready, start));
+            var b = pool.submit(() -> attemptApproval(secondId, request, ready, start));
+            assertTrue(ready.await(15, TimeUnit.SECONDS));
+            start.countDown();
+            boolean aSucceeded = a.get(40, TimeUnit.SECONDS);
+            boolean bSucceeded = b.get(40, TimeUnit.SECONDS);
+            assertEquals(1, (aSucceeded ? 1 : 0) + (bSucceeded ? 1 : 0),
+                    "Only one pending reservation may be approved in an occupied slot");
+
+            var sameTime = agendamentos.findByDataAndAtivoTrue(date).stream()
+                    .filter(appointment -> appointment.getHorario().equals(time))
+                    .toList();
+            assertEquals(2, sameTime.size(), "Both pending records should remain in the database");
+            assertEquals(1, sameTime.stream()
+                    .filter(appointment -> appointment.getStatus() == StatusAgendamento.APROVADO)
+                    .count());
+        } finally {
+            start.countDown();
+            pool.shutdownNow();
+            assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+        }
+    }
+
+    private boolean attemptApproval(Long appointmentId, AprovarAgendamentoRequest request,
+                                    CountDownLatch ready, CountDownLatch start) throws Exception {
+        ready.countDown();
+        if (!start.await(15, TimeUnit.SECONDS)) {
+            throw new AssertionError("Concurrent approval barrier timed out");
+        }
+        try {
+            aprovar.execute(appointmentId, request);
+            return true;
+        } catch (AgendaConflitoException conflict) {
+            return false;
         }
     }
 

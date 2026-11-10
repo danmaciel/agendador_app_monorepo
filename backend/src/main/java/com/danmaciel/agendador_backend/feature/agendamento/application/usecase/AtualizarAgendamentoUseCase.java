@@ -13,6 +13,7 @@ import com.danmaciel.agendador_backend.feature.agendamento.infrastructure.lock.A
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
@@ -20,6 +21,7 @@ import com.danmaciel.agendador_backend.feature.servico.domain.repository.Servico
 import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
 import com.danmaciel.agendador_backend.shared.exception.AlteracaoForaDoPrazoException;
 import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
+import com.danmaciel.agendador_backend.shared.exception.BusinessException;
 
 @Component
 public class AtualizarAgendamentoUseCase {
@@ -40,6 +42,10 @@ public class AtualizarAgendamentoUseCase {
         agendaWriteLock.acquire();
         Agendamento agendamento = agendamentoRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
+
+        if (agendamento.getStatus() != StatusAgendamento.PENDENTE) {
+            throw new BusinessException("Somente agendamentos pendentes podem ser atualizados");
+        }
 
         if (agendamento.getData().minusDays(2).isBefore(LocalDate.now())) {
             throw new AlteracaoForaDoPrazoException();

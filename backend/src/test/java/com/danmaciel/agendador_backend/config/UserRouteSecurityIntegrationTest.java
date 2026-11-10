@@ -11,6 +11,7 @@ import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -105,6 +106,48 @@ class UserRouteSecurityIntegrationTest {
         mockMvc.perform(delete("/api/v1/usuario/{id}", target.getId())
                         .with(admin))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void clientCannotQueryOtherUsersAppointmentsOrHistory() throws Exception {
+        Usuario owner = createUser("appointment_owner");
+        Usuario other = createUser("appointment_other");
+        var client = user(owner.getLogin()).authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CLIENTE"));
+
+        mockMvc.perform(get("/api/v1/agendamento/meus-agendamentos")
+                        .param("usuarioId", other.getId().toString()).with(client))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/agendamento/historico")
+                        .param("usuarioId", other.getId().toString()).with(client))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/agendamento/historico/aprovados-por-dia")
+                        .param("usuarioId", other.getId().toString()).with(client))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/v1/agendamento/meus-agendamentos")
+                        .param("usuarioId", owner.getId().toString()).with(client))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void clientCannotCreateAppointmentsForOtherUsersOrUseForcedRoute() throws Exception {
+        Usuario owner = createUser("booking_owner");
+        Usuario other = createUser("booking_other");
+        var client = user(owner.getLogin()).authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CLIENTE"));
+        String body = "{\"usuarioId\":" + other.getId()
+                + ",\"data\":\"2099-01-01\",\"horario\":\"14:00\",\"servicoIds\":[]}";
+
+        mockMvc.perform(post("/api/v1/agendamento")
+                        .with(client).contentType("application/json").content(body))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/agendamento/aceitar-data-sugestao")
+                        .with(client).contentType("application/json").content(body))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/agendamento/criar-forcado")
+                        .with(client).contentType("application/json").content(body))
+                .andExpect(status().isForbidden());
     }
 
     private Usuario createUser(String prefix) {

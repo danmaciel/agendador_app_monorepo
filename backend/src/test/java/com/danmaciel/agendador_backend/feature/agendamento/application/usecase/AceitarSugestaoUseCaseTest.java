@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,17 +28,22 @@ import com.danmaciel.agendador_backend.feature.agendamento.application.dto.Agend
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
+import com.danmaciel.agendador_backend.feature.agendamento.infrastructure.lock.AgendaWriteLock;
 import com.danmaciel.agendador_backend.feature.servico.domain.entity.Servico;
 import com.danmaciel.agendador_backend.feature.servico.domain.repository.ServicoRepository;
 import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
 import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
+import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
 
 @ExtendWith(MockitoExtension.class)
 class AceitarDataSugestaoUseCaseTest {
 
     @Mock
     private AgendamentoRepository agendamentoRepository;
+
+    @Mock
+    private AgendaWriteLock agendaWriteLock;
 
     @Mock
     private UsuarioRepository usuarioRepository;
@@ -49,7 +56,7 @@ class AceitarDataSugestaoUseCaseTest {
     @BeforeEach
     void setUp() {
         aceitarSugestaoUseCase = new AceitarDataSugestaoUseCase(agendamentoRepository, usuarioRepository,
-                servicoRepository);
+                servicoRepository, agendaWriteLock);
     }
 
     @Test
@@ -88,6 +95,80 @@ class AceitarDataSugestaoUseCaseTest {
         // Assert
         assertNotNull(result);
         assertEquals(2, result.servicos().size());
+    }
+
+    @Test
+    void naoDeveEstenderAgendamentoQuandoNovoTempoCausarSobreposicao() {
+        Long usuarioId = 1L;
+        LocalDate data = LocalDate.now().plusDays(5);
+        Usuario usuario = new Usuario("joao", "senha", "Joao");
+        usuario.setId(usuarioId);
+        Usuario outroUsuario = new Usuario("maria", "senha", "Maria");
+        outroUsuario.setId(2L);
+        Servico atual = new Servico("Corte", "Corte", new BigDecimal("30.00"), 30);
+        atual.setId(1L);
+        Servico novo = new Servico("Barba", "Barba", new BigDecimal("20.00"), 30);
+        novo.setId(2L);
+        Agendamento existente = new Agendamento(usuario, data, LocalTime.of(10, 0));
+        existente.setId(10L);
+        existente.setServicos(new HashSet<>(Set.of(atual)));
+        existente.setTempoTotal(30);
+        Agendamento outro = new Agendamento(outroUsuario, data, LocalTime.of(10, 45));
+        outro.setId(11L);
+        outro.setTempoTotal(30);
+        AgendamentoRequest request = new AgendamentoRequest(
+                usuarioId, data, LocalTime.of(14, 0), Set.of(2L));
+
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(2L))))
+                .thenReturn(Set.of(novo));
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(
+                eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
+                .thenReturn(List.of(existente));
+        when(agendamentoRepository.findByDataAndAtivoTrue(data))
+                .thenReturn(List.of(existente, outro));
+
+        assertThrows(AgendamentoConflitoException.class, () -> aceitarSugestaoUseCase.execute(request));
+        assertEquals(30, existente.getTempoTotal());
+        assertEquals(1, existente.getServicos().size());
+        verify(agendamentoRepository, never()).save(any(Agendamento.class));
+    }
+
+    @Test
+    void permiteEstenderAgendamentoAteInicioDeOutroHorario() {
+        Long usuarioId = 1L;
+        LocalDate data = LocalDate.now().plusDays(5);
+        Usuario usuario = new Usuario("joao", "senha", "Joao");
+        usuario.setId(usuarioId);
+        Usuario outroUsuario = new Usuario("maria", "senha", "Maria");
+        outroUsuario.setId(2L);
+        Servico atual = new Servico("Corte", "Corte", new BigDecimal("30.00"), 30);
+        atual.setId(1L);
+        Servico novo = new Servico("Barba", "Barba", new BigDecimal("20.00"), 30);
+        novo.setId(2L);
+        Agendamento existente = new Agendamento(usuario, data, LocalTime.of(10, 0));
+        existente.setId(10L);
+        existente.setServicos(new HashSet<>(Set.of(atual)));
+        existente.setTempoTotal(30);
+        Agendamento outro = new Agendamento(outroUsuario, data, LocalTime.of(11, 0));
+        outro.setId(11L);
+        outro.setTempoTotal(30);
+        AgendamentoRequest request = new AgendamentoRequest(
+                usuarioId, data, LocalTime.of(14, 0), Set.of(2L));
+
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(Set.of(2L))))
+                .thenReturn(Set.of(novo));
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(
+                eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
+                .thenReturn(List.of(existente));
+        when(agendamentoRepository.findByDataAndAtivoTrue(data))
+                .thenReturn(List.of(existente, outro));
+        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AgendamentoResponse response = aceitarSugestaoUseCase.execute(request);
+        assertEquals(60, response.tempoTotal());
+        assertEquals(2, response.servicos().size());
     }
 
     @Test

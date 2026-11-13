@@ -26,6 +26,7 @@ import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
 import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
+import com.danmaciel.agendador_backend.shared.exception.BusinessException;
 
 @Component
 public class AceitarDataSugestaoUseCase {
@@ -63,6 +64,11 @@ public class AceitarDataSugestaoUseCase {
 
         if (agendamentosSemana.isEmpty()) {
             throw new RecursoNaoEncontradoException("Nenhum agendamento encontrado nesta semana");
+        }
+
+        if (agendamentosSemana.size() > 1) {
+            throw new BusinessException(
+                    "Há mais de um agendamento pendente nesta semana; selecione um agendamento específico");
         }
 
         Agendamento agendamentoExistente = agendamentosSemana.get(0);

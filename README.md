@@ -78,6 +78,8 @@ PENDENTE --aprovar--> APROVADO
 PENDENTE --rejeitar--> REJEITADO
 ```
 
+A aprovação exige que **todos os IDs selecionados pertençam aos serviços do agendamento**, rejeitando IDs estranhos com HTTP 400 em vez de ignorá-los silenciosamente. A aprovação pode escolher um subconjunto válido de serviços e recalcula a duração; a validação também ocorre no caso de uso, mesmo em chamadas sem passar pelo controller.
+
 Após aprovação ou rejeição, a rota de atualização de agendamento bloqueia mudanças de data, horário e serviços. O aceite de sugestões mantém o agendamento pendente da semana e acrescenta serviços **sem alterar sua data ou horário**; recalcula a duração e recusa sobreposição antes de salvar. A criação forçada, exclusiva para administradores, continua podendo ignorar conflitos.
 
 Os testes de autorização MockMvc e testes unitários de transições complementam os testes concorrentes com PostgreSQL. São evidências de **cenários específicos**, não uma auditoria de segurança exaustiva nem uma garantia de comportamento sob toda condição de produção.

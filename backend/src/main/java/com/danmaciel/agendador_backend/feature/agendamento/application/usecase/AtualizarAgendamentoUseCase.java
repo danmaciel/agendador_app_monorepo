@@ -12,6 +12,7 @@ import com.danmaciel.agendador_backend.feature.agendamento.infrastructure.lock.A
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.AgendamentoHorarioPolicy;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
@@ -59,6 +60,8 @@ public class AtualizarAgendamentoUseCase {
         int tempoTotal = servicos.stream()
                 .mapToInt(Servico::getTempoExecucao)
                 .sum();
+
+        AgendamentoHorarioPolicy.validarIntervaloNoMesmoDia(request.horario(), tempoTotal);
 
         List<Agendamento> agendamentosDia = agendamentoRepository.findByDataAndAtivoTrue(request.data());
         Long idAgendamentoAtual = agendamento.getId();

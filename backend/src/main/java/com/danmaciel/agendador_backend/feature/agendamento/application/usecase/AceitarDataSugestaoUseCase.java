@@ -47,6 +47,11 @@ public class AceitarDataSugestaoUseCase {
 
     @Transactional
     public AgendamentoResponse execute(AgendamentoRequest request) {
+        return execute(null, request);
+    }
+
+    @Transactional
+    public AgendamentoResponse execute(Long agendamentoId, AgendamentoRequest request) {
         agendaWriteLock.acquire();
         Usuario usuario = usuarioRepository.findById(request.usuarioId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
@@ -59,19 +64,34 @@ public class AceitarDataSugestaoUseCase {
         LocalDate dataInicioSemana = request.data().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate dataFimSemana = request.data().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
-        List<Agendamento> agendamentosSemana = agendamentoRepository
-                .findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(usuario.getId(), dataInicioSemana, dataFimSemana, StatusAgendamento.PENDENTE);
+        Agendamento agendamentoExistente;
+        if (agendamentoId != null) {
+            agendamentoExistente = agendamentoRepository.findByIdAndAtivoTrue(agendamentoId)
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
+            if (!agendamentoExistente.getUsuario().getId().equals(usuario.getId())) {
+                throw new RecursoNaoEncontradoException("Agendamento não encontrado");
+            }
+            if (agendamentoExistente.getStatus() != StatusAgendamento.PENDENTE) {
+                throw new BusinessException("Somente agendamentos pendentes podem aceitar sugestões");
+            }
+            if (agendamentoExistente.getData().isBefore(dataInicioSemana)
+                    || agendamentoExistente.getData().isAfter(dataFimSemana)) {
+                throw new BusinessException("O agendamento selecionado não pertence à semana informada");
+            }
+        } else {
+            List<Agendamento> agendamentosSemana = agendamentoRepository
+                    .findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(
+                            usuario.getId(), dataInicioSemana, dataFimSemana, StatusAgendamento.PENDENTE);
 
-        if (agendamentosSemana.isEmpty()) {
-            throw new RecursoNaoEncontradoException("Nenhum agendamento encontrado nesta semana");
+            if (agendamentosSemana.isEmpty()) {
+                throw new RecursoNaoEncontradoException("Nenhum agendamento encontrado nesta semana");
+            }
+            if (agendamentosSemana.size() > 1) {
+                throw new BusinessException(
+                        "Há mais de um agendamento pendente nesta semana; não é possível identificar qual deve ser atualizado");
+            }
+            agendamentoExistente = agendamentosSemana.get(0);
         }
-
-        if (agendamentosSemana.size() > 1) {
-            throw new BusinessException(
-                    "Há mais de um agendamento pendente nesta semana; não é possível identificar qual deve ser atualizado");
-        }
-
-        Agendamento agendamentoExistente = agendamentosSemana.get(0);
 
         // Calculate the proposed duration before mutating the managed entity.
         Set<Servico> servicosCombinados = new HashSet<>(agendamentoExistente.getServicos());

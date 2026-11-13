@@ -83,6 +83,24 @@ class AtualizarAgendamentoUseCaseTest {
     }
 
     @Test
+    void deveRejeitarAtualizacaoQuandoUsuarioInformadoNaoEhProprietario() {
+        Long id = 1L;
+        Usuario proprietario = new Usuario("proprietario", "senha", "Proprietário");
+        proprietario.setId(1L);
+        Agendamento agendamento = new Agendamento(
+                proprietario, LocalDate.now().plusDays(5), LocalTime.of(10, 0));
+        agendamento.setId(id);
+
+        AgendamentoRequest request = new AgendamentoRequest(
+                2L, LocalDate.now().plusDays(10), LocalTime.of(14, 0), Set.of(1L));
+        when(agendamentoRepository.findByIdAndAtivoTrue(id)).thenReturn(Optional.of(agendamento));
+
+        assertThrows(BusinessException.class, () -> atualizarAgendamentoUseCase.execute(id, request));
+        verify(servicoRepository, never()).findAllByIdAndAtivoTrue(any());
+        verify(agendamentoRepository, never()).save(any(Agendamento.class));
+    }
+
+    @Test
     void deveLancarExcecaoQuandoAgendamentoNaoExistir() {
         // Arrange
         Long id = 999L;

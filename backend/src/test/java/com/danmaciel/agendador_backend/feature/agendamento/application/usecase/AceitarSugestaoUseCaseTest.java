@@ -35,6 +35,7 @@ import com.danmaciel.agendador_backend.feature.usuario.domain.entity.Usuario;
 import com.danmaciel.agendador_backend.feature.usuario.domain.repository.UsuarioRepository;
 import com.danmaciel.agendador_backend.shared.exception.RecursoNaoEncontradoException;
 import com.danmaciel.agendador_backend.shared.exception.AgendamentoConflitoException;
+import com.danmaciel.agendador_backend.shared.exception.BusinessException;
 
 @ExtendWith(MockitoExtension.class)
 class AceitarDataSugestaoUseCaseTest {
@@ -207,4 +208,37 @@ class AceitarDataSugestaoUseCaseTest {
         // Act & Assert
         assertThrows(RecursoNaoEncontradoException.class, () -> aceitarSugestaoUseCase.execute(request));
     }
+    @Test
+    void naoDeveEscolherArbitrariamenteEntreMultiplosPendentes() {
+        Long usuarioId = 1L;
+        LocalDate data = LocalDate.now().plusWeeks(2);
+        Usuario usuario = new Usuario("joao", "senha", "Joao");
+        usuario.setId(usuarioId);
+
+        Servico novo = new Servico("Barba", "Barba", new BigDecimal("20.00"), 30);
+        novo.setId(2L);
+        Agendamento primeiro = new Agendamento(usuario, data, LocalTime.of(9, 0));
+        primeiro.setId(10L);
+        Agendamento segundo = new Agendamento(usuario, data.plusDays(1), LocalTime.of(10, 0));
+        segundo.setId(11L);
+
+        AgendamentoRequest request = new AgendamentoRequest(
+                usuarioId, data, LocalTime.of(14, 0), Set.of(2L));
+
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(servicoRepository.findAllByIdAndAtivoTrue(Set.of(2L))).thenReturn(Set.of(novo));
+        when(agendamentoRepository.findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(
+                eq(usuarioId), any(), any(), eq(StatusAgendamento.PENDENTE)))
+                .thenReturn(List.of(primeiro, segundo));
+
+        BusinessException erro = assertThrows(
+                BusinessException.class, () -> aceitarSugestaoUseCase.execute(request));
+
+        assertEquals("Há mais de um agendamento pendente nesta semana; não é possível identificar qual deve ser atualizado",
+                erro.getMessage());
+        verify(agendamentoRepository, never()).save(any(Agendamento.class));
+        assertEquals(Set.of(), primeiro.getServicos());
+        assertEquals(Set.of(), segundo.getServicos());
+    }
+
 }

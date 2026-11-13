@@ -50,6 +50,15 @@ public class AprovarAgendamentoUseCase {
             }
         }
 
+        Set<Long> servicoIdsDisponiveis = agendamento.getServicos().stream()
+                .map(Servico::getId)
+                .collect(Collectors.toSet());
+        if (request.servicosAprovados() == null || request.servicosAprovados().isEmpty()
+                || !servicoIdsDisponiveis.containsAll(request.servicosAprovados())) {
+            throw new com.danmaciel.agendador_backend.shared.exception.BusinessException(
+                    "Os serviços aprovados devem pertencer ao agendamento e não podem estar vazios");
+        }
+
         Set<Servico> servicosAprovados = agendamento.getServicos().stream()
                 .filter(s -> request.servicosAprovados().contains(s.getId()))
                 .collect(Collectors.toSet());

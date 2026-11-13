@@ -144,7 +144,7 @@ class UserRouteSecurityIntegrationTest {
         var client = user(owner.getLogin()).authorities(
                 new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CLIENTE"));
         String body = "{\"usuarioId\":" + other.getId()
-                + ",\"data\":\"2099-01-01\",\"horario\":\"14:00\",\"servicoIds\":[]}";
+                + ",\"data\":\"2099-01-01\",\"horario\":\"14:00\",\"servicoIds\":[1]}";
 
         mockMvc.perform(post("/api/v1/agendamento")
                         .with(client).contentType("application/json").content(body))
@@ -173,7 +173,7 @@ class UserRouteSecurityIntegrationTest {
         mockMvc.perform(get("/api/v1/agendamento/{id}", appointment.getId()).with(otherClient))
                 .andExpect(status().isForbidden());
         String validBody = "{\"usuarioId\":" + owner.getId()
-                + ",\"data\":\"2099-01-03\",\"horario\":\"15:00\",\"servicoIds\":[]}";
+                + ",\"data\":\"2099-01-03\",\"horario\":\"15:00\",\"servicoIds\":[1]}";
         mockMvc.perform(put("/api/v1/agendamento/{id}", appointment.getId())
                         .with(otherClient).contentType("application/json")
                         .content(validBody))

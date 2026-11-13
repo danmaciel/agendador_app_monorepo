@@ -68,7 +68,7 @@ public class AceitarDataSugestaoUseCase {
 
         if (agendamentosSemana.size() > 1) {
             throw new BusinessException(
-                    "Há mais de um agendamento pendente nesta semana; selecione um agendamento específico");
+                    "Há mais de um agendamento pendente nesta semana; não é possível identificar qual deve ser atualizado");
         }
 
         Agendamento agendamentoExistente = agendamentosSemana.get(0);

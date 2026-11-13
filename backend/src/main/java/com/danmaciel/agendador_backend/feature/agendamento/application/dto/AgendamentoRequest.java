@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 
 public record AgendamentoRequest(
     @NotNull(message = "ID do usuário é obrigatório")
@@ -24,6 +25,6 @@ public record AgendamentoRequest(
     @JsonFormat(pattern = "HH:mm")
     LocalTime horario,
     
-    @NotNull(message = "Serviços são obrigatórios")
+    @NotEmpty(message = "É necessário informar pelo menos um serviço")
     Set<Long> servicoIds
 ) {}

@@ -61,7 +61,7 @@ class AceitarDataSugestaoUseCaseTest {
 
         BusinessException erro = assertThrows(BusinessException.class, () -> useCase.execute(request));
 
-        assertEquals("Há mais de um agendamento pendente nesta semana; selecione um agendamento específico",
+        assertEquals("Há mais de um agendamento pendente nesta semana; não é possível identificar qual deve ser atualizado",
                 erro.getMessage());
         verify(agendamentoRepository, never()).save(any(Agendamento.class));
         assertEquals(Set.of(), primeiro.getServicos());

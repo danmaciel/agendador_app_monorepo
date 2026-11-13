@@ -65,6 +65,8 @@ Essa é uma **estratégia conservadora de agenda única**: operações independe
 
 O teste `AgendaConcurrencyPostgresIT` cobre disputas entre duas transações PostgreSQL: criação concorrente no mesmo horário, aprovação concorrente de reservas pendentes sobrepostas e atualização concorrente de reservas diferentes para o mesmo horário. Os testes exigem Docker/Testcontainers e rodam no perfil `postgres-it`. A estratégia não constitui prova de capacidade de produção, nem resolve requisitos futuros de múltiplos profissionais, fusos horários, horários que ultrapassam a meia-noite ou planejamento de recursos.
 
+A validação da entrada de agendamentos exige **pelo menos um serviço** (`servicoIds` não pode ser vazio ou nulo). O contrato de aprovação já exige uma seleção não vazia. Essa verificação impede que as rotas de criação e atualização aceitem um agendamento sem serviços e com duração zero; não substitui a validação de disponibilidade dos serviços nem as regras transacionais de conflito.
+
 ## Autorização e regras de domínio
 
 O backend é um **projeto demonstrativo**, não um serviço publicado em produção. Para consultar e atualizar um agendamento por ID, o cliente autenticado deve ser seu proprietário ou administrador. Criação normal e aceite de sugestões também conferem o usuário do pedido; listagens individuais e histórico usam a mesma política de proprietário. Criação forçada, aprovação, rejeição, exclusão lógica e consultas administrativas são restritas ao papel de administrador.

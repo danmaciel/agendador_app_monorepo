@@ -9,6 +9,7 @@ import com.danmaciel.agendador_backend.feature.agendamento.infrastructure.lock.A
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AprovarAgendamentoRequest;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.AgendamentoHorarioPolicy;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
@@ -53,11 +54,13 @@ public class AprovarAgendamentoUseCase {
                 .filter(s -> request.servicosAprovados().contains(s.getId()))
                 .collect(Collectors.toSet());
 
-        agendamento.setServicos(servicosAprovados);
-        
         int tempoTotal = servicosAprovados.stream()
                 .mapToInt(Servico::getTempoExecucao)
                 .sum();
+        AgendamentoHorarioPolicy.validarIntervaloNoMesmoDia(agendamento.getHorario(), tempoTotal);
+
+        agendamento.setServicos(servicosAprovados);
+        
         agendamento.setTempoTotal(tempoTotal);
 
         verificarConflitoHorario(agendamento);

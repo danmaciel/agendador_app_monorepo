@@ -59,7 +59,7 @@ public class AceitarDataSugestaoUseCase {
         if (agendamento.getStatus() != StatusAgendamento.PENDENTE) {
             throw new BusinessException("Somente agendamentos pendentes podem aceitar sugestões");
         }
-        return adicionarServicos(agendamento, request.servicoIds());
+        return adicionarServicos(agendamento, buscarServicosAtivos(request.servicoIds()));
     }
 
     @Transactional
@@ -67,6 +67,8 @@ public class AceitarDataSugestaoUseCase {
         agendaWriteLock.acquire();
         Usuario usuario = usuarioRepository.findById(request.usuarioId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
+
+        Set<Servico> servicosNovos = buscarServicosAtivos(request.servicoIds());
 
         LocalDate dataInicioSemana = request.data().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate dataFimSemana = request.data().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
@@ -100,19 +102,22 @@ public class AceitarDataSugestaoUseCase {
             agendamentoExistente = agendamentosSemana.get(0);
         }
 
-        return adicionarServicos(agendamentoExistente, request.servicoIds());
+        return adicionarServicos(agendamentoExistente, servicosNovos);
     }
 
-    private AgendamentoResponse adicionarServicos(Agendamento agendamentoExistente, Set<Long> servicoIds) {
+    private Set<Servico> buscarServicosAtivos(Set<Long> servicoIds) {
         if (servicoIds == null || servicoIds.isEmpty()) {
             throw new BusinessException("É necessário informar pelo menos um serviço");
         }
-        Set<Servico> servicosNovos = new HashSet<>(
+        Set<Servico> servicos = new HashSet<>(
                 servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(servicoIds)));
-        if (servicosNovos.size() != servicoIds.size()) {
+        if (servicos.size() != servicoIds.size()) {
             throw new RecursoNaoEncontradoException("Um ou mais serviços não encontrados");
         }
+        return servicos;
+    }
 
+    private AgendamentoResponse adicionarServicos(Agendamento agendamentoExistente, Set<Servico> servicosNovos) {
         // Calculate the proposed duration before mutating the managed entity.
         Set<Servico> servicosCombinados = new HashSet<>(agendamentoExistente.getServicos());
         servicosCombinados.addAll(servicosNovos);

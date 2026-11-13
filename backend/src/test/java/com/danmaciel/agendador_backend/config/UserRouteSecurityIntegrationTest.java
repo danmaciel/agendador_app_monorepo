@@ -155,6 +155,10 @@ class UserRouteSecurityIntegrationTest {
         mockMvc.perform(post("/api/v1/agendamento/criar-forcado")
                         .with(client).contentType("application/json").content(body))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/agendamento/aceitar-data-sugestao/{id}", 123L)
+                        .with(client).contentType("application/json").content(body))
+                .andExpect(status().isForbidden());
+
     }
 
     @Test

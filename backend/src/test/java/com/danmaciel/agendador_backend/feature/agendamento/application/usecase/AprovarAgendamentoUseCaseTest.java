@@ -1,6 +1,7 @@
 package com.danmaciel.agendador_backend.feature.agendamento.application.usecase;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -97,4 +98,73 @@ class AprovarAgendamentoUseCaseTest {
         verify(agendamentoRepository, never()).save(any(Agendamento.class));
     }
 
+
+    @Test
+    void naoDeveAprovarServicosQueNaoPertencemAoAgendamento() {
+        Usuario usuario = new Usuario("cliente", "senha", "Cliente");
+        usuario.setId(1L);
+        Servico servico = new Servico("Corte", "Corte", new BigDecimal("50.00"), 30);
+        servico.setId(10L);
+        servico.setAtivo(true);
+
+        Agendamento agendamento = new Agendamento(usuario, LocalDate.now().plusDays(5), LocalTime.of(10, 0));
+        agendamento.setId(40L);
+        agendamento.setServicos(Set.of(servico));
+        agendamento.setTempoTotal(30);
+        when(agendamentoRepository.findByIdAndAtivoTrue(40L)).thenReturn(Optional.of(agendamento));
+
+        // One existing service and one unrelated ID must not silently become
+        // a partial approval.
+        assertThrows(BusinessException.class, () -> aprobarAgendamentoUseCase.execute(
+                40L, new AprovarAgendamentoRequest(Set.of(10L, 999L))));
+
+        assertEquals(StatusAgendamento.PENDENTE, agendamento.getStatus());
+        assertEquals(Set.of(servico), agendamento.getServicos());
+        assertEquals(30, agendamento.getTempoTotal());
+        verify(agendamentoRepository, never()).save(any(Agendamento.class));
+    }
+
+    @Test
+    void devePermitirAprovarSubconjuntoValidoDosServicos() {
+        Usuario usuario = new Usuario("cliente", "senha", "Cliente");
+        usuario.setId(1L);
+        Servico servicoA = new Servico("Corte", "Corte", new BigDecimal("50.00"), 30);
+        servicoA.setId(10L);
+        servicoA.setAtivo(true);
+        Servico servicoB = new Servico("Barba", "Barba", new BigDecimal("30.00"), 15);
+        servicoB.setId(20L);
+        servicoB.setAtivo(true);
+
+        Agendamento agendamento = new Agendamento(usuario, LocalDate.now().plusDays(5), LocalTime.of(10, 0));
+        agendamento.setId(41L);
+        agendamento.setServicos(Set.of(servicoA, servicoB));
+        when(agendamentoRepository.findByIdAndAtivoTrue(41L)).thenReturn(Optional.of(agendamento));
+        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AgendamentoResponse result = aprobarAgendamentoUseCase.execute(
+                41L, new AprovarAgendamentoRequest(Set.of(20L)));
+
+        assertEquals(StatusAgendamento.APROVADO, result.status());
+        assertEquals(15, result.tempoTotal());
+        assertEquals(Set.of(servicoB), agendamento.getServicos());
+        verify(agendamentoRepository).save(agendamento);
+    }
+
+    @Test
+    void naoDeveAprovarListaVaziaEmChamadaDiretaAoCasoDeUso() {
+        Usuario usuario = new Usuario("cliente", "senha", "Cliente");
+        usuario.setId(1L);
+        Servico servico = new Servico("Corte", "Corte", new BigDecimal("50.00"), 30);
+        servico.setId(10L);
+        servico.setAtivo(true);
+        Agendamento agendamento = new Agendamento(usuario, LocalDate.now().plusDays(5), LocalTime.of(10, 0));
+        agendamento.setId(42L);
+        agendamento.setServicos(Set.of(servico));
+        when(agendamentoRepository.findByIdAndAtivoTrue(42L)).thenReturn(Optional.of(agendamento));
+
+        assertThrows(BusinessException.class,
+                () -> aprobarAgendamentoUseCase.execute(42L, new AprovarAgendamentoRequest(Set.of())));
+        assertEquals(StatusAgendamento.PENDENTE, agendamento.getStatus());
+        verify(agendamentoRepository, never()).save(any(Agendamento.class));
+    }
 }

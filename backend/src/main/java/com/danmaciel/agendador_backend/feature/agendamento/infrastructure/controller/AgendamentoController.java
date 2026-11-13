@@ -116,6 +116,15 @@ public class AgendamentoController {
         return ResponseEntity.ok(aceitarSugestaoUseCase.execute(request));
     }
 
+    @PostMapping("/aceitar-data-sugestao/{id}")
+    @PreAuthorize("@userProfileAccessPolicy.canRead(authentication, #request.usuarioId())")
+    @Operation(summary = "Aceitar sugestão para agendamento específico",
+            description = "Adiciona serviços a um agendamento pendente identificado por ID, sem mudar data ou horário")
+    public ResponseEntity<AgendamentoResponse> aceitarDataSugestivaPorId(
+            @PathVariable Long id, @Valid @RequestBody AgendamentoRequest request) {
+        return ResponseEntity.ok(aceitarSugestaoUseCase.execute(id, request));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("@appointmentAccessPolicy.canAccess(authentication, #id)")
     @Operation(summary = "Buscar agendamento por ID", description = "Retorna os dados de um agendamento específico")

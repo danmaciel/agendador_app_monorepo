@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
+import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AceitarSugestaoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
@@ -267,6 +268,48 @@ class AceitarDataSugestaoUseCaseTest {
         verify(agendamentoRepository, never()).findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(
                 any(), any(), any(), any());
         verify(agendamentoRepository).save(selecionado);
+    }
+
+    @Test
+    void requestSimplificadoAtualizaAgendamentoSemUsuarioDataOuHorarioNoCorpo() {
+        Usuario usuario = new Usuario("cliente", "senha", "Cliente");
+        usuario.setId(1L);
+        LocalDate data = LocalDate.now().plusDays(10);
+        Agendamento agendamento = new Agendamento(usuario, data, LocalTime.of(9, 0));
+        agendamento.setId(10L);
+        Servico servico = new Servico("Corte", "Corte", new BigDecimal("30.00"), 30);
+        servico.setId(2L);
+
+        when(agendamentoRepository.findByIdAndAtivoTrue(10L)).thenReturn(Optional.of(agendamento));
+        when(servicoRepository.findAllByIdAndAtivoTrue(Set.of(2L))).thenReturn(Set.of(servico));
+        when(agendamentoRepository.save(agendamento)).thenReturn(agendamento);
+
+        AgendamentoResponse result = aceitarSugestaoUseCase.executeById(
+                10L, new AceitarSugestaoRequest(Set.of(2L)));
+
+        assertEquals(10L, result.id());
+        assertEquals(1L, result.usuarioId());
+        assertEquals(data, result.data());
+        assertEquals(LocalTime.of(9, 0), result.horario());
+        assertEquals(30, result.tempoTotal());
+        verify(agendamentoRepository).save(agendamento);
+        verify(usuarioRepository, never()).findById(any());
+    }
+
+    @Test
+    void requestSimplificadoRejeitaAgendamentoNaoPendenteSemSalvar() {
+        Usuario usuario = new Usuario("cliente", "senha", "Cliente");
+        usuario.setId(1L);
+        Agendamento agendamento = new Agendamento(usuario, LocalDate.now().plusDays(10), LocalTime.of(9, 0));
+        agendamento.setId(10L);
+        agendamento.setStatus(StatusAgendamento.APROVADO);
+
+        when(agendamentoRepository.findByIdAndAtivoTrue(10L)).thenReturn(Optional.of(agendamento));
+
+        assertThrows(BusinessException.class, () -> aceitarSugestaoUseCase.executeById(
+                10L, new AceitarSugestaoRequest(Set.of(2L))));
+        verify(servicoRepository, never()).findAllByIdAndAtivoTrue(any());
+        verify(agendamentoRepository, never()).save(any(Agendamento.class));
     }
 
     @Test

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
+import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AceitarSugestaoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AprovarAgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.HistoricoResponse;
 import com.danmaciel.agendador_backend.feature.agendamento.application.usecase.AceitarDataSugestaoUseCase;
@@ -117,12 +118,12 @@ public class AgendamentoController {
     }
 
     @PostMapping("/aceitar-data-sugestao/{id}")
-    @PreAuthorize("@userProfileAccessPolicy.canRead(authentication, #request.usuarioId())")
+    @PreAuthorize("@appointmentAccessPolicy.canAccess(authentication, #id)")
     @Operation(summary = "Aceitar sugestão para agendamento específico",
             description = "Adiciona serviços a um agendamento pendente identificado por ID, sem mudar data ou horário")
     public ResponseEntity<AgendamentoResponse> aceitarDataSugestivaPorId(
-            @PathVariable Long id, @Valid @RequestBody AgendamentoRequest request) {
-        return ResponseEntity.ok(aceitarSugestaoUseCase.execute(id, request));
+            @PathVariable Long id, @Valid @RequestBody AceitarSugestaoRequest request) {
+        return ResponseEntity.ok(aceitarSugestaoUseCase.executeById(id, request));
     }
 
     @GetMapping("/{id}")

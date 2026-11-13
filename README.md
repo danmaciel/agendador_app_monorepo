@@ -71,6 +71,8 @@ A validação da entrada de agendamentos exige **pelo menos um serviço** (`serv
 
 O backend é um **projeto demonstrativo**, não um serviço publicado em produção. Para consultar e atualizar um agendamento por ID, o cliente autenticado deve ser seu proprietário ou administrador. Criação normal e aceite de sugestões também conferem o usuário do pedido; listagens individuais e histórico usam a mesma política de proprietário. Criação forçada, aprovação, rejeição, exclusão lógica e consultas administrativas são restritas ao papel de administrador.
 
+O aceite de sugestões também oferece `POST /api/v1/agendamento/aceitar-data-sugestao/{id}`, com `AgendamentoRequest` no corpo. Esta rota seleciona explicitamente um agendamento ativo, pendente e pertencente ao usuário autenticado (ou a um usuário autorizado ao administrador). O campo `request.data` define a semana em que o agendamento selecionado deve estar; `request.horario` **não altera** o horário original. A operação apenas acrescenta serviços e recalcula a duração, respeitando as verificações de conflito. O endpoint antigo, sem ID, continua disponível e rejeita casos com vários pendentes na semana, evitando escolha arbitrária. O contrato legado ainda inclui campos de data/horário para manter compatibilidade, e uma remodelagem do DTO fica fora deste ajuste.
+
 O fluxo de estados das operações de aprovação e rejeição é intencionalmente restrito:
 
 ```text

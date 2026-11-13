@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
+import com.danmaciel.agendador_backend.feature.agendamento.domain.AgendamentoHorarioPolicy;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.repository.AgendamentoRepository;
 import com.danmaciel.agendador_backend.feature.servico.application.dto.ServicoResponse;
@@ -45,6 +46,8 @@ public class CriarAgendamentoForcadoUseCase {
         int tempoTotal = servicos.stream()
                 .mapToInt(Servico::getTempoExecucao)
                 .sum();
+
+        AgendamentoHorarioPolicy.validarIntervaloNoMesmoDia(request.horario(), tempoTotal);
 
         Agendamento agendamento = new Agendamento(usuario, request.data(), request.horario());
         agendamento.setServicos(servicos);

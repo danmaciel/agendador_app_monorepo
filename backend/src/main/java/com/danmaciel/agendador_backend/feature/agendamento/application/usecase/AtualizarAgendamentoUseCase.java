@@ -44,6 +44,10 @@ public class AtualizarAgendamentoUseCase {
         Agendamento agendamento = agendamentoRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
 
+        if (!agendamento.getUsuario().getId().equals(request.usuarioId())) {
+            throw new BusinessException("O usuário informado deve ser o proprietário do agendamento");
+        }
+
         if (agendamento.getStatus() != StatusAgendamento.PENDENTE) {
             throw new BusinessException("Somente agendamentos pendentes podem ser atualizados");
         }

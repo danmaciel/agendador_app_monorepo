@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AgendamentoResponse;
+import com.danmaciel.agendador_backend.feature.agendamento.application.dto.AceitarSugestaoRequest;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.AgendamentoHorarioPolicy;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.Agendamento;
 import com.danmaciel.agendador_backend.feature.agendamento.domain.entity.StatusAgendamento;
@@ -51,15 +52,21 @@ public class AceitarDataSugestaoUseCase {
     }
 
     @Transactional
+    public AgendamentoResponse executeById(Long agendamentoId, AceitarSugestaoRequest request) {
+        agendaWriteLock.acquire();
+        Agendamento agendamento = agendamentoRepository.findByIdAndAtivoTrue(agendamentoId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
+        if (agendamento.getStatus() != StatusAgendamento.PENDENTE) {
+            throw new BusinessException("Somente agendamentos pendentes podem aceitar sugestões");
+        }
+        return adicionarServicos(agendamento, request.servicoIds());
+    }
+
+    @Transactional
     public AgendamentoResponse execute(Long agendamentoId, AgendamentoRequest request) {
         agendaWriteLock.acquire();
         Usuario usuario = usuarioRepository.findById(request.usuarioId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
-
-        Set<Servico> servicosNovos = new HashSet<>(servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(request.servicoIds())));
-        if (servicosNovos.size() != request.servicoIds().size()) {
-            throw new RecursoNaoEncontradoException("Um ou mais serviços não encontrados");
-        }
 
         LocalDate dataInicioSemana = request.data().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate dataFimSemana = request.data().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
@@ -91,6 +98,19 @@ public class AceitarDataSugestaoUseCase {
                         "Há mais de um agendamento pendente nesta semana; não é possível identificar qual deve ser atualizado");
             }
             agendamentoExistente = agendamentosSemana.get(0);
+        }
+
+        return adicionarServicos(agendamentoExistente, request.servicoIds());
+    }
+
+    private AgendamentoResponse adicionarServicos(Agendamento agendamentoExistente, Set<Long> servicoIds) {
+        if (servicoIds == null || servicoIds.isEmpty()) {
+            throw new BusinessException("É necessário informar pelo menos um serviço");
+        }
+        Set<Servico> servicosNovos = new HashSet<>(
+                servicoRepository.findAllByIdAndAtivoTrue(new HashSet<>(servicoIds)));
+        if (servicosNovos.size() != servicoIds.size()) {
+            throw new RecursoNaoEncontradoException("Um ou mais serviços não encontrados");
         }
 
         // Calculate the proposed duration before mutating the managed entity.

@@ -241,4 +241,75 @@ class AceitarDataSugestaoUseCaseTest {
         assertEquals(Set.of(), segundo.getServicos());
     }
 
+    @Test
+    void deveSelecionarAgendamentoPendentePeloIdSemConsultarListaDaSemana() {
+        Long usuarioId = 1L;
+        LocalDate data = LocalDate.now().plusWeeks(2);
+        Usuario usuario = new Usuario("joao", "senha", "Joao");
+        usuario.setId(usuarioId);
+        Servico servico = new Servico("Corte", "Corte", new BigDecimal("30.00"), 30);
+        servico.setId(2L);
+        Agendamento selecionado = new Agendamento(usuario, data, LocalTime.of(9, 0));
+        selecionado.setId(10L);
+        AgendamentoRequest request = new AgendamentoRequest(
+                usuarioId, data, LocalTime.of(15, 0), Set.of(2L));
+
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(servicoRepository.findAllByIdAndAtivoTrue(Set.of(2L))).thenReturn(Set.of(servico));
+        when(agendamentoRepository.findByIdAndAtivoTrue(10L)).thenReturn(Optional.of(selecionado));
+        when(agendamentoRepository.save(selecionado)).thenReturn(selecionado);
+
+        AgendamentoResponse response = aceitarSugestaoUseCase.execute(10L, request);
+
+        assertEquals(10L, response.id());
+        assertEquals(LocalTime.of(9, 0), response.horario());
+        assertEquals(Set.of(servico), selecionado.getServicos());
+        verify(agendamentoRepository, never()).findByUsuarioIdAndDataBetweenAndStatusAndAtivoTrue(
+                any(), any(), any(), any());
+        verify(agendamentoRepository).save(selecionado);
+    }
+
+    @Test
+    void deveRejeitarAgendamentoDeOutroUsuarioSemSalvar() {
+        Usuario solicitante = new Usuario("cliente", "senha", "Cliente");
+        solicitante.setId(1L);
+        Usuario proprietario = new Usuario("outro", "senha", "Outro");
+        proprietario.setId(2L);
+        LocalDate data = LocalDate.now().plusWeeks(2);
+        Agendamento outro = new Agendamento(proprietario, data, LocalTime.of(9, 0));
+        outro.setId(10L);
+        AgendamentoRequest request = new AgendamentoRequest(1L, data, LocalTime.of(9, 0), Set.of(2L));
+        Servico servico = new Servico("Corte", "Corte", new BigDecimal("30.00"));
+        servico.setId(2L);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(solicitante));
+        when(servicoRepository.findAllByIdAndAtivoTrue(Set.of(2L))).thenReturn(Set.of(servico));
+        when(agendamentoRepository.findByIdAndAtivoTrue(10L)).thenReturn(Optional.of(outro));
+
+        assertThrows(RecursoNaoEncontradoException.class,
+                () -> aceitarSugestaoUseCase.execute(10L, request));
+        verify(agendamentoRepository, never()).save(any(Agendamento.class));
+    }
+
+    @Test
+    void deveRejeitarAgendamentoAprovadoNaSelecaoPorId() {
+        Usuario usuario = new Usuario("cliente", "senha", "Cliente");
+        usuario.setId(1L);
+        LocalDate data = LocalDate.now().plusWeeks(2);
+        Agendamento aprovado = new Agendamento(usuario, data, LocalTime.of(9, 0));
+        aprovado.setId(10L);
+        aprovado.setStatus(StatusAgendamento.APROVADO);
+        AgendamentoRequest request = new AgendamentoRequest(1L, data, LocalTime.of(9, 0), Set.of(2L));
+        Servico servico = new Servico("Corte", "Corte", new BigDecimal("30.00"));
+        servico.setId(2L);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(servicoRepository.findAllByIdAndAtivoTrue(Set.of(2L))).thenReturn(Set.of(servico));
+        when(agendamentoRepository.findByIdAndAtivoTrue(10L)).thenReturn(Optional.of(aprovado));
+
+        assertThrows(BusinessException.class,
+                () -> aceitarSugestaoUseCase.execute(10L, request));
+        verify(agendamentoRepository, never()).save(any(Agendamento.class));
+    }
+
 }
